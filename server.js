@@ -18,7 +18,7 @@ const io = new Server(server); // Create the Socket.IO server
 // Rest of your code...
 
 
-const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/project-mentorship";
+const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/mentorship";
 mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
 mongoose.Promise = Promise;
 
