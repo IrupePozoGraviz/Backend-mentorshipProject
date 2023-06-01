@@ -15,7 +15,9 @@ const app = express(); // Create the Express application
 const server = http.createServer(app); // Create the HTTP server using the Express app
 const io = new Server(server); // Create the Socket.IO server
 
-// Rest of your code...
+// Add middlewares to enable cors and json body parsing
+app.use(cors());
+app.use(express.json());
 
 
 const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/mentorship";
@@ -27,9 +29,7 @@ mongoose.Promise = Promise;
 // PORT=9000 npm start
 const port = process.env.PORT || 8080;
 
-// Add middlewares to enable cors and json body parsing
-app.use(cors());
-app.use(express.json());
+
 
 
 
