@@ -10,8 +10,13 @@ import multer from 'multer';
 import path from 'path';
 import listEndpoints from "express-list-endpoints";
 
-const server = http.createServer(app);
-const io = new Server(server);
+const app = express(); // Create the Express application
+
+const server = http.createServer(app); // Create the HTTP server using the Express app
+const io = new Server(server); // Create the Socket.IO server
+
+// Rest of your code...
+
 
 const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/project-mentorship";
 mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
@@ -21,7 +26,6 @@ mongoose.Promise = Promise;
 // when starting the server. Example command to overwrite PORT env variable value:
 // PORT=9000 npm start
 const port = process.env.PORT || 8080;
-const app = express();
 
 // Add middlewares to enable cors and json body parsing
 app.use(cors());
