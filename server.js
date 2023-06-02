@@ -9,6 +9,8 @@ import { Server } from "socket.io";
 import multer from 'multer';
 import path from 'path';
 import listEndpoints from "express-list-endpoints";
+import dotenv from 'dotenv';
+dotenv.config();
 
 const app = express(); // Create the Express application
 
@@ -16,16 +18,19 @@ const server = http.createServer(app); // Create the HTTP server using the Expre
 const io = new Server(server); // Create the Socket.IO server
 
 // Add middlewares to enable cors and json body parsing
-app.use(cors());
-app.use(express.json());
+const corsOptions = {
+  origin: '*', // Allow all origins
+  methods: ['GET', 'POST'], // Allow GET and POST requests
+  preflightContinue: false, // Enable preflight requests
+  optionsSuccessStatus: 204, // Return 204 status for successful preflight requests
+};
 
-app.use((req, res, next) => {
-  res.setHeader('Access-Control-Allow-Origin', 'http://localhost:3000');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
-  res.setHeader('Access-Control-Allow-Credentials', 'true');
-  next();
-});
+
+// Middlewares
+app.use(cors(corsOptions));
+app.use(express.json());
+app.options('*', cors())
+
 const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/mentorship";
 mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
 mongoose.Promise = Promise;
