@@ -211,7 +211,7 @@ app.post("/login", async (req, res) => {
 // /user/:userId - GET - get single user - doesn't matter if it's a mentee or a mentor
 // below is an endpoint to get a single user
 app.get("/user/:userId", async (req, res) => {
-  const { firstName, email, username, preference } = req.body;
+  const { username, email, lastName, firstName, preferences, role } = req.body;
 try {
   const user = await User.findOne({_id: req.params.userId})
   if (user) {
@@ -221,7 +221,9 @@ try {
         firstName: firstName,
         email: email,
         username: username,
-        preference: preference,
+        preferences: preferences,
+        lastName: lastName,
+        role: role,
         preferences: user.preferences,
         message: "User found"
       }
