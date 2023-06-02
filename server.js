@@ -11,6 +11,7 @@ import path from 'path';
 import listEndpoints from "express-list-endpoints";
 import dotenv from 'dotenv';
 dotenv.config();
+require('dotenv').config();
 
 const app = express(); // Create the Express application
 
