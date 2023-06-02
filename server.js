@@ -121,6 +121,10 @@ const UserSchema = new mongoose.Schema({
     type: String,
     default: ''
   },
+  profilePicture: {
+    type: String,
+    default: ''
+  },
   accessToken: {
     type: String,
     default: () => crypto.randomBytes(128).toString('hex')
@@ -212,6 +216,7 @@ app.post("/login", async (req, res) => {
 // /user/:userId - GET - get single user - doesn't matter if it's a mentee or a mentor
 // below is an endpoint to get a single user
 app.get("/user/:userId", async (req, res) => {
+
   try {
     const user = await User.findOne({ _id: req.params.userId });
     if (user) {
@@ -419,6 +424,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage: storage })
 
 // Endpoint for uploading a profile picture
+// Middleware for serving uploaded files
+app.use('/uploads', express.static('uploads'));
+
+// Endpoint for uploading a profile picture
 app.post('/user/:userId/upload-profile-picture', upload.single('profilePicture'), async (req, res) => {
   const userId = req.params.userId;
   const profilePicture = req.file;
@@ -439,6 +448,29 @@ app.post('/user/:userId/upload-profile-picture', upload.single('profilePicture')
     res.status(500).json({
       success: false,
       message: 'Failed to upload profile picture',
+      error: error.message
+    });
+  }
+});
+
+// Endpoint for retrieving a profile picture
+app.get('/user/:userId/profile-picture', async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const user = await User.findById(userId);
+    if (user && user.profilePicture) {
+      res.status(200).sendFile(path.join(__dirname, `uploads/${user.profilePicture}`));
+    } else {
+      res.status(404).json({
+        success: false,
+        message: 'Profile picture not found'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve profile picture',
       error: error.message
     });
   }
@@ -468,31 +500,6 @@ app.delete('/user/:userId/delete-profile-picture', async (req, res) => {
   }
 });
 
-// Endpoint for changing a profile picture
-app.patch('/user/:userId/change-profile-picture', upload.single('profilePicture'), async (req, res) => {
-  const userId = req.params.userId;
-  const profilePicture = req.file;
-
-  // Update the user's profile picture in the database
-  try {
-    await User.findOneAndUpdate(
-      { _id: userId },
-      { profilePicture: profilePicture.filename }
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Profile picture changed successfully',
-      file: profilePicture
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to change profile picture',
-      error: error.message
-    });
-  }
-});
 
 
 const BioSchema = new mongoose.Schema({
