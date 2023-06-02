@@ -211,34 +211,31 @@ app.post("/login", async (req, res) => {
 // /user/:userId - GET - get single user - doesn't matter if it's a mentee or a mentor
 // below is an endpoint to get a single user
 app.get("/user/:userId", async (req, res) => {
-  try {
-    const user = await User.findOne({ _id: req.params.userId });
-    if (user) {
-      res.status(200).json({
-        success: true,
-        response: {
-          firstName: user.firstName,
-          email: user.email,
-          username: user.username,
-          preferences: user.preferences,
-          role: user.role,
-          message: "User found"
-        }
-      });
-    } else {
-      res.status(400).json({
-        success: false,
-        response: "User not found"
-      });
-    }
-  } catch (e) {
-    res.status(500).json({
+try {
+  const user = await User.findOne({_id: req.params.userId})
+  if (user) {
+    res.status(200).json({
+      success: true,
+      response: {
+        username: user.username,
+        id: user._id,
+        preferences: user.preferences,
+        message: "User found"
+      }
+    });
+  } else {
+    res.status(400).json({
       success: false,
-      response: e
+      response: "User not found"
     });
   }
+} catch (e) {
+  res.status(500).json({
+    success: false,
+    response: e
+  });
+}
 });
-
 
 
 // /user/:userId - PATCH - update single user - their preferences or whatever you need
