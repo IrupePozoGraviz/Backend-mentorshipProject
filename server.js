@@ -4,8 +4,8 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import validator from 'validator';
-import http from 'http';
-import { Server } from "socket.io";
+// import http from 'http';
+import Server from 'socket.io';
 import multer from 'multer';
 import path from 'path';
 import listEndpoints from "express-list-endpoints";
@@ -14,9 +14,6 @@ dotenv.config();
 require('dotenv').config();
 
 const app = express(); // Create the Express application
-
-const server = http.createServer(app); // Create the HTTP server using the Express app
-const io = new Server(server); // Create the Socket.IO server
 
 // Add middlewares to enable cors and json body parsing
 const corsOptions = {
@@ -42,22 +39,28 @@ mongoose.Promise = Promise;
 const port = process.env.PORT || 8080;
 
 
-
-
+// Socket.io logic here
+//const http = require('http').createServer(app);
+//http.createServer(app)
+const Server = http.createServer(app);
+const io = require('socket.io')(http);
 
 io.on('connection', (socket) => {
   console.log('A user connected');
 
-  socket.on('customEvent', (data) => {
-    console.log('Received customEvent:', data);
+  // Handle events from the client
+  socket.on('chat message', (message) => {
+    console.log('Received message:', message);
+    // Broadcast the message to all connected clients
+    io.emit('chat message', message);
   });
 
-  socket.emit('customEvent', { message: 'Hello client!' });
-
+  // Handle disconnections
   socket.on('disconnect', () => {
     console.log('A user disconnected');
   });
 });
+
 
 app.get("/", (req, res) => {
   res.send(listEndpoints(app));
@@ -519,7 +522,7 @@ const BioSchema = new mongoose.Schema({
   }
 });
 
-const Bio = mongoose.model("Bio", BioSchema);
+const bio = mongoose.model("bio", BioSchema);
 
 // Authenticate the user
 const authenticateUser = async (req, res, next) => {
@@ -550,7 +553,7 @@ app.get("/bio", async (req, res) => {
     const user = await User.findOne({ accessToken: accessToken })
 
     if (user) {
-      const bio = await Bio.find({ username: user._id }).sort({ createdAt: -1 }).limit(20)
+      const bio = await bio.find({ username: user._id }).sort({ createdAt: -1 }).limit(20)
       res.status(200).json({
         success: true,
         response: bio,
@@ -580,7 +583,7 @@ app.get("/bio", async (req, res) => {
     const user = await User.findOne({ accessToken: accessToken })
 
     if (user) {
-      const bio = await Bio.find({ username: user._id }).sort({ createdAt: -1 }).limit(20)
+      const bio = await bio.find({ username: user._id }).sort({ createdAt: -1 }).limit(20)
       res.status(200).json({
         success: true,
         response: bio,
@@ -607,13 +610,13 @@ app.post("/bio", async (req, res) => {
     const { message } = req.body;
     const accessToken = req.header("Authorization");
     const user = await User.findOne({accessToken: accessToken});
-    const bio = await new Bio({
+    const bio = await new bio({
       message: message, 
       username: user._id
     }).save();
     res.status(201).json({
       success: true, 
-      response: Bio
+      response: bio
     })
   } catch (e) {
     res.status(500).json({
@@ -632,7 +635,7 @@ app.put("/bio", async (req, res) => {
     const user = await User.findOne({accessToken: accessToken});
     
     // Find and update the bio, returning the updated bio
-    const updatedBio = await Bio.findOneAndUpdate(
+    const updatedBio = await bio.findOneAndUpdate(
       { username: user._id }, // Find bio by user's _id
       { message: message }, // Update the message
       { new: true } // Option to return the updated document
@@ -663,6 +666,6 @@ app.put("/bio", async (req, res) => {
 
 // start the server
 
-server.listen(process.env.PORT || 8080, () => {
+Server.listen(process.env.PORT || 8080, () => {
   console.log(`Server is running on port ${process.env.PORT || 8080}`);
 });
