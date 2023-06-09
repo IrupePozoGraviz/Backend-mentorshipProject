@@ -40,9 +40,9 @@ const port = process.env.PORT || 8080;
 
 
 // Socket.io logic here
-//const http = require('http').createServer(app);
+const http = require('http').createServer(app);
 //http.createServer(app)
-const Server = http.createServer(app);
+// const Server = http.createServer(app);
 const io = require('socket.io')(http);
 
 io.on('connection', (socket) => {
@@ -666,6 +666,6 @@ app.put("/bio", async (req, res) => {
 
 // start the server
 
-Server.listen(process.env.PORT || 8080, () => {
+http.listen(process.env.PORT || 8080, () => {
   console.log(`Server is running on port ${process.env.PORT || 8080}`);
 });
