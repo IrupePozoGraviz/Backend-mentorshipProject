@@ -4,47 +4,24 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import validator from 'validator';
-// import http from 'http';
-import Server from 'socket.io';
 import multer from 'multer';
 import path from 'path';
 import listEndpoints from "express-list-endpoints";
 import dotenv from 'dotenv';
+
 dotenv.config();
-require('dotenv').config();
 
-const app = express(); // Create the Express application
-
-// Add middlewares to enable cors and json body parsing
-const corsOptions = {
-  origin: '*', // Allow all origins
-  methods: ['GET', 'POST'], // Allow GET and POST requests
-  preflightContinue: false, // Enable preflight requests
-  optionsSuccessStatus: 204, // Return 204 status for successful preflight requests
-};
-
-
-// Middlewares
-app.use(cors(corsOptions));
-app.use(express.json());
-app.options('*', cors())
-
-const mongoUrl = process.env.MONGO_URL || "mongodb://localhost/mentorship";
-mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
-mongoose.Promise = Promise;
-
-// Defines the port the app will run on. Defaults to 8080, but can be overridden
-// when starting the server. Example command to overwrite PORT env variable value:
-// PORT=9000 npm start
-const port = process.env.PORT || 8080;
-
-
-// Socket.io logic here
+const app = express();
 const http = require('http').createServer(app);
-//http.createServer(app)
-// const Server = http.createServer(app);
 const io = require('socket.io')(http);
 
+// Add middlewares to enable cors and json body parsing
+app.use(cors());
+app.use(express.json());
+
+// Rest of your code...
+
+// Socket.io logic here
 io.on('connection', (socket) => {
   console.log('A user connected');
 
@@ -666,6 +643,7 @@ app.put("/bio", async (req, res) => {
 
 // start the server
 
-http.listen(process.env.PORT || 8080, () => {
-  console.log(`Server is running on port ${process.env.PORT || 8080}`);
+const port = process.env.PORT || 8080;
+http.listen(port, () => {
+  console.log(`Server running on port ${port}`);
 });
