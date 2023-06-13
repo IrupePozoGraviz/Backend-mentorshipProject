@@ -347,6 +347,48 @@ app.get('/users', async (req, res) => {
     });
   }
 });
+/* app.patch("like person or something", async (req, res) => {
+ använd inloggade user id för att hitta vilken user som ska uppdateras.
+använd userId som skickades med i bodyn för att spara i inloggade userns likedPersons array
+}*/
+
+app.patch("/likedPersons/:userId", async (req, res) => {
+  try {
+    const loggedInUserId = req.userId; // Assuming you have stored the logged-in user's ID in the req.userId property
+
+    const { userId } = req.params; // Extract the userId from the URL parameters
+    const userToUpdate = await User.findById(loggedInUserId); // Find the logged-in user by their ID
+
+    userToUpdate.likedPersons.push(userId); // Add the userId to the likedPersons array of the logged-in user
+
+    // Save the updated user with the new likedPersons array
+    const updatedUser = await userToUpdate.save();
+
+    res.json(updatedUser); // Return the updated user as the response
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
+
+app.patch("/dislikedPersons/:userId", async (req, res) => {
+  try {
+    const loggedInUserId = req.userId; // Assuming you have stored the logged-in user's ID in the req.userId property
+
+    const { userId } = req.params; // Extract the userId from the URL parameters
+    const userToUpdate = await User.findById(loggedInUserId); // Find the logged-in user by their ID
+
+    userToUpdate.dislikedPersons.push(userId); // Add the userId to the dislikedPersons array of the logged-in user
+
+    // Save the updated user with the new dislikedPersons array
+    const updatedUser = await userToUpdate.save();
+
+    res.json(updatedUser); // Return the updated user as the response
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 
 // add a GET request to match a mentor with a mentee and vice versa
 // /users/:userId/match - GET - get a list of users -
