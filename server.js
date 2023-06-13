@@ -9,6 +9,7 @@ import multer from 'multer';
 import path from 'path';
 import listEndpoints from "express-list-endpoints";
 import dotenv from 'dotenv';
+import { stringify } from "querystring";
 dotenv.config();
 require('dotenv').config();
 
@@ -110,15 +111,22 @@ const UserSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: "Preference",
   }],
+
   role: {
     type: String,
     enum: ["mentor", "mentee"],
     required: true,
   },
-  verificationToken: {
-    type: String,
-    unique: true,
-  },
+// should this array contain all of the actual matches that occurred, or all the POTENTIAL matches that this person is aligable to have? Or should this be two different posts?
+likedPersons : { 
+  // SKA DET VARA EN ARRAY ELLER ETT OBJEKT?
+  /*type: String
+  enum : []
+  eller default: '' */
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "User"
+},
+ 
   bio: {
     type: String,
     default: ''
@@ -126,6 +134,10 @@ const UserSchema = new mongoose.Schema({
   profilePicture: {
     type: String,
     default: ''
+  },
+   verificationToken: {
+    type: String,
+    unique: true,
   },
   accessToken: {
     type: String,
