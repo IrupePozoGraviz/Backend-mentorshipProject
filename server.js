@@ -123,10 +123,8 @@ likedPersons : {
   /*type: String
   enum : []
   eller default: '' */
-  type: mongoose.Schema.Types.ObjectId,
-  ref: "User"
+  type: [String],
 },
- 
   bio: {
     type: String,
     default: ''
