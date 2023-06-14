@@ -23,7 +23,6 @@ const corsOptions = {
   optionsSuccessStatus: 204, // Return 204 status for successful preflight requests
 };
 
-
 // Middlewares
 app.use(cors(corsOptions));
 app.use(express.json());
@@ -115,7 +114,7 @@ const UserSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ["mentor", "mentee"],
-    required: true,
+    // required: true,
   },
 // should this array contain all of the actual matches that occurred, or all the POTENTIAL matches that this person is aligable to have? Or should this be two different posts?
 likedPersons : { 
@@ -351,32 +350,48 @@ använd userId som skickades med i bodyn för att spara i inloggade userns liked
 }*/
 
 app.patch("/likedPersons/:userId", async (req, res) => {
+  const {likedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
+  const { userId } = req.params; // Extract the userId from the URL parameters
+
+  console.log('likedUserId', likedUserId)
+  console.log('userId parama', userId)
+
   try {
-    const loggedInUserId = req.userId; // Assuming you have stored the logged-in user's ID in the req.userId property
 
-    const { userId } = req.params; // Extract the userId from the URL parameters
-    const userToUpdate = await User.findById(loggedInUserId); // Find the logged-in user by their ID
-
-    userToUpdate.likedPersons.push(userId); // Add the userId to the likedPersons array of the logged-in user
-
-    // Save the updated user with the new likedPersons array
-    const updatedUser = await userToUpdate.save();
-
-    res.json(updatedUser); // Return the updated user as the response
+    const userToUpdate = await User.findById(userId); // Find the logged-in user by their ID
+    if (userToUpdate) {
+      console.log('userToUpdate', userToUpdate)
+      userToUpdate.likedPersons.push(likedUserId); // Add the likedUserId to the likedPersons array of the logged-in user
+  
+      // Save the updated user with the new likedPersons array
+      const updatedUser = await userToUpdate.save();
+  
+      res.json(updatedUser); // Return the updated user as the response
+    } else {
+      res.status(404).json({error: 'User not found'})
+    }
+   
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-app.patch("/dislikedPersons/:userId", async (req, res) => {
-  try {
-    const loggedInUserId = req.userId; // Assuming you have stored the logged-in user's ID in the req.userId property
+app.patch("/dislikedPersons/:userId", async (req, res) => { 
+  const {dislikedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
 
-    const { userId } = req.params; // Extract the userId from the URL parameters
+  console.log('dislikedUserId', dislikedUserId) 
+  const loggedInUserId = req.userId; // Assuming you have stored the logged-in user's ID in the req.userId property
+  const { userId } = req.params; // Extract the userId from the URL parameters
+  console.log('loggedInUserId', loggedInUserId) 
+  console.log('userId params', userId) 
+
+  try {
+
     const userToUpdate = await User.findById(loggedInUserId); // Find the logged-in user by their ID
 
-    userToUpdate.dislikedPersons.push(userId); // Add the userId to the dislikedPersons array of the logged-in user
+    // when disliking a person we want to remove that person from the likedPersons array
+    
 
     // Save the updated user with the new dislikedPersons array
     const updatedUser = await userToUpdate.save();
