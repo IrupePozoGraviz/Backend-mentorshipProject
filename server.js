@@ -194,19 +194,13 @@ app.post("/register", async (req, res) => {
 
 //LOGIN
 app.post("/login", async (req, res) => {
-  const { username, password, role } = req.body;
+  const { username, password } = req.body;
   try {
-    const user = await User.findOne({username: username, role: role})
+    const user = await User.findOne({username: username})
     if (user && bcrypt.compareSync(password, user.password)) {
       res.status(200).json({
         success: true,
-        response: {
-          username: user.username,
-          role: user.role,
-          id: user._id,
-          accessToken: user.accessToken,
-          message: "Login successful"
-        }
+        response: user
       });
     } else {
       res.status(400).json({
