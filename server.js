@@ -175,11 +175,7 @@ app.post("/register", async (req, res) => {
 
     res.status(201).json({
       success: true,
-      response: {
-        username: newUser.username,
-        id: newUser._id,
-        accessToken: newUser.accessToken,
-      },
+      response: newUser
     });
   } catch (e) {
     res.status(400).json({
