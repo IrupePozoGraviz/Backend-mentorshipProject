@@ -118,10 +118,7 @@ const UserSchema = new mongoose.Schema({
   },
 // should this array contain all of the actual matches that occurred, or all the POTENTIAL matches that this person is aligable to have? Or should this be two different posts?
 likedPersons : { 
-  // SKA DET VARA EN ARRAY ELLER ETT OBJEKT?
-  /*type: String
-  enum : []
-  eller default: '' */
+ 
   type: [String],
 },
   bio: {
@@ -197,14 +194,15 @@ app.post("/register", async (req, res) => {
 
 //LOGIN
 app.post("/login", async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, role } = req.body;
   try {
-    const user = await User.findOne({username: username})
+    const user = await User.findOne({username: username, role: role})
     if (user && bcrypt.compareSync(password, user.password)) {
       res.status(200).json({
         success: true,
         response: {
           username: user.username,
+          role: user.role,
           id: user._id,
           accessToken: user.accessToken,
           message: "Login successful"
