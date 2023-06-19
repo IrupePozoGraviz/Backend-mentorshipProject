@@ -39,35 +39,31 @@ const port = process.env.PORT || 8080;
 
 
 // Socket.io logic here
-const http = require('http').createServer(app);
+/* const http = require('http').createServer(app); */
 //http.createServer(app)
 // const Server = http.createServer(app);
-const io = require('socket.io')(http);
+/* const io = require('socket.io')(http);
 
 io.on('connection', (socket) => {
-  console.log('A user connected');
+  console.log('A user connected'); */
 
   // Handle events from the client
-  socket.on('chat message', (message) => {
+ /*  socket.on('chat message', (message) => {
     console.log('Received message:', message);
     // Broadcast the message to all connected clients
     io.emit('chat message', message);
-  });
+  }); */
 
   // Handle disconnections
-  socket.on('disconnect', () => {
+ /*  socket.on('disconnect', () => {
     console.log('A user disconnected');
   });
-});
+}); */
 
 
-app.get("/", (req, res) => {
-  res.send(listEndpoints(app));
 
-});
+// /////////// SCHEMAS /////////// //
 
-
-// user och preferences
 const PreferenceSchema = new mongoose.Schema({
   preference: {
     type: String,
@@ -75,6 +71,7 @@ const PreferenceSchema = new mongoose.Schema({
     enum: ["fullstack", "frontend", "backend", "react", "javascript", "python", "java", "c++", "c#", "ruby", "php", "sql", "html", "css", "node", "angular", "vue", "swift", "kotlin", "flutter", "react native", "android", "ios", "unity"]
   }
 });
+
 const Preference = mongoose.model("Preference", PreferenceSchema);
 
 const UserSchema = new mongoose.Schema({
@@ -106,24 +103,18 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
- preferences: [{
+  preferences: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: "Preference",
   }],
-
   role: {
     type: String,
     enum: ["mentor", "mentee"],
     // required: true,
   },
-// should this array contain all of the actual matches that occurred, or all the POTENTIAL matches that this person is aligable to have? Or should this be two different posts?
-likedPersons : { 
-  // SKA DET VARA EN ARRAY ELLER ETT OBJEKT?
-  /*type: String
-  enum : []
-  eller default: '' */
-  type: [String],
-},
+  likedPersons: {
+    type: String,
+  },
   bio: {
     type: String,
     default: ''
@@ -132,7 +123,7 @@ likedPersons : {
     type: String,
     default: ''
   },
-   verificationToken: {
+  verificationToken: {
     type: String,
     unique: true,
   },
@@ -143,6 +134,36 @@ likedPersons : {
 });
 
 const User = mongoose.model("User", UserSchema);
+
+// /////////// AUTHENTICATE USER MIDDLEWARE /////////// //
+
+const authenticateUser = async (req, res, next) => {
+  const accessToken = req.header("Authorization");
+  try {
+    const user = await User.findOne({ accessToken: accessToken });
+    if (user) {
+      next();
+    } else {
+      res.status(401).json({
+        success: false,
+        response: "Please log in",
+        loggedOut: true
+      })
+    }
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      response: e
+    });
+  }
+}
+
+// /////////// ENDPOINTS /////////// //
+
+app.get("/", (req, res) => {
+  res.send(listEndpoints(app));
+
+});
 
 // CREATE REGISTRATION - Irro- // e mail går även att använda i login
 app.post("/register", async (req, res) => {
@@ -199,14 +220,23 @@ app.post("/register", async (req, res) => {
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
   try {
-    const user = await User.findOne({username: username})
+    const user = await User.findOne({ username: username })
+    console.log(user)
     if (user && bcrypt.compareSync(password, user.password)) {
       res.status(200).json({
         success: true,
         response: {
           username: user.username,
           id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          likedPersons: user.likedPersons,
+          email: user.email,
+          role: user.role,
+          preferences: user.preferences,
           accessToken: user.accessToken,
+          bio: user.bio,
+          profilePicture: user.profilePicture,
           message: "Login successful"
         }
       });
@@ -225,7 +255,8 @@ app.post("/login", async (req, res) => {
 });
 
 // /user/:userId - GET - get single user - doesn't matter if it's a mentee or a mentor
-// below is an endpoint to get a single user
+// You need to be logged in to be able to access this. That's why we use the authenticateUser middleware
+app.get("/user/:userId", authenticateUser)
 app.get("/user/:userId", async (req, res) => {
 
   try {
@@ -235,10 +266,13 @@ app.get("/user/:userId", async (req, res) => {
         success: true,
         response: {
           firstName: user.firstName,
+          lastName: user.lastName,
           email: user.email,
           username: user.username,
           preferences: user.preferences,
           role: user.role,
+          bio: user.bio,
+          profilePicture: user.profilePicture,
           message: "User found"
         }
       });
@@ -258,45 +292,48 @@ app.get("/user/:userId", async (req, res) => {
 
 
 
-// /user/:userId - PATCH - update single user - their preferences or whatever you need
-
+// /user/:userId - PATCH - update single user - their preferences or whatever you need to update
+// You need to be logged in to be able to access this. That's why we use the authenticateUser middleware
+app.patch("/user/:userId", authenticateUser)
 app.patch("/user/:userId", async (req, res) => {
   const { firstName, lastName, password, email, username, preference } = req.body;
   try {
-const user = await User.findOneAndUpdate( {_id: req.params.userId}, {
+    const user = await User.findOneAndUpdate({ _id: req.params.userId }, {
 
-  firstName: firstName,
-  lastName: lastName,
-  password: password,
-  email: email,
-  username: username,
-  preference: preference
-}, {new: true});
-if (user) {
-  res.status(200).json({
-    success: true,
-    response: {
-      username: user.username,
-      id: user._id,
-      preferences: user.preferences,
-      message: "User updated"
+      firstName: firstName,
+      lastName: lastName,
+      password: password,
+      email: email,
+      username: username,
+      preference: preference
+    }, { new: true });
+    if (user) {
+      res.status(200).json({
+        success: true,
+        response: {
+          username: user.username,
+          id: user._id,
+          preferences: user.preferences,
+          message: "User updated"
+        }
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        response: "User not found"
+      });
     }
-  });
-} else {
-  res.status(400).json({
-    success: false,
-    response: "User not found"
-  });
-}
-} catch (e) {
-res.status(500).json({
-  success: false,
-  response: e
-});
-}
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      response: e
+    });
+  }
 });
 
-
+// Endpoint to delete a user
+// You need to be logged in to be able to access this. That's why we use the authenticateUser middleware
+app.delete("/user/:userId", authenticateUser)
 app.delete("/user/:userId", async (req, res) => {
   try {
     const user = await User.findOneAndDelete({ _id: req.params.userId })
@@ -306,7 +343,6 @@ app.delete("/user/:userId", async (req, res) => {
         response: {
           username: user.username,
           id: user._id,
-          preferences: user.preferences,
           message: "User deleted"
         }
       });
@@ -324,10 +360,13 @@ app.delete("/user/:userId", async (req, res) => {
   }
 });
 
-// users - GET - get a list of users - 
+// users - GET - get a list of all users - 
 //here if you are a mentor you get a list of mentees if 
 //you are a mentee you get a list of mentors, 
 //additionally if you want to expand on that you can show only the users with matching preferences
+//
+// You need to be logged in to be able to access this. That's why we use the authenticateUser middleware
+app.get('/users', authenticateUser)
 app.get('/users', async (req, res) => {
   try {
     const users = await User.find();
@@ -344,54 +383,55 @@ app.get('/users', async (req, res) => {
     });
   }
 });
-/* app.patch("like person or something", async (req, res) => {
- använd inloggade user id för att hitta vilken user som ska uppdateras.
-använd userId som skickades med i bodyn för att spara i inloggade userns likedPersons array
-}*/
 
-app.patch("/likedPersons/:userId", async (req, res) => {
-  const {likedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
-  const { userId } = req.params; // Extract the userId from the URL parameters
-
-  console.log('likedUserId', likedUserId)
-  console.log('userId parama', userId)
+// Endpoint to add a person to your likedPersons array
+//
+// You need to be logged in to be able to access this. That's why we use the authenticateUser middleware
+app.patch("/likedPersons", authenticateUser)
+app.patch("/likedPersons", async (req, res) => {
+  const { likedUserId } = req.body // Get the user that we want to save from the request body. to use this in frontend you need to send the id of the user you want to save in the body of the request 
+  //const { userId } = req.params; // Extract the userId from the URL parameters (the logged in user)
+  const accessToken = req.header("Authorization");
+  // const user = await User.findOne({ accessToken: accessToken });
 
   try {
 
-    const userToUpdate = await User.findById(userId); // Find the logged-in user by their ID
+    const userToUpdate = await User.findOne({ accessToken: accessToken })
     if (userToUpdate) {
       console.log('userToUpdate', userToUpdate)
       userToUpdate.likedPersons.push(likedUserId); // Add the likedUserId to the likedPersons array of the logged-in user
-  
+
       // Save the updated user with the new likedPersons array
       const updatedUser = await userToUpdate.save();
-  
+
       res.json(updatedUser); // Return the updated user as the response
     } else {
-      res.status(404).json({error: 'User not found'})
+      res.status(404).json({ error: 'User not found' })
     }
-   
+
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
   }
 });
 
-app.patch("/dislikedPersons/:userId", async (req, res) => { 
-  const {dislikedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
+// Stretch goal - to be able to "dislike" or remove a user from likedPersons array
+// This can be added to the above endpoint, with some logic. Let's leave it for now
+app.patch("/dislikedPersons/:userId", async (req, res) => {
+  const { dislikedUserId } = req.body // usern som vi vill likea (använd req.body i frontend)
 
-  console.log('dislikedUserId', dislikedUserId) 
+  console.log('dislikedUserId', dislikedUserId)
   const loggedInUserId = req.userId; // Assuming you have stored the logged-in user's ID in the req.userId property
   const { userId } = req.params; // Extract the userId from the URL parameters
-  console.log('loggedInUserId', loggedInUserId) 
-  console.log('userId params', userId) 
+  console.log('loggedInUserId', loggedInUserId)
+  console.log('userId params', userId)
 
   try {
 
     const userToUpdate = await User.findById(loggedInUserId); // Find the logged-in user by their ID
 
     // when disliking a person we want to remove that person from the likedPersons array
-    
+
 
     // Save the updated user with the new dislikedPersons array
     const updatedUser = await userToUpdate.save();
@@ -471,7 +511,7 @@ app.get('/preferences', async (req, res) => {
         preferences: uniquePreferences,
       }
     });
-  } catch(e) {
+  } catch (e) {
     res.status(500).json({
       success: false,
       response: e
@@ -484,10 +524,10 @@ const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/')
   },
-  filename: function(req, file, cb) {
- const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
- const fileExtension = path.extname(file.originalname)
-  cb(null, file.fieldname + '-' + uniqueSuffix + fileExtension) 
+  filename: function (req, file, cb) {
+    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+    const fileExtension = path.extname(file.originalname)
+    cb(null, file.fieldname + '-' + uniqueSuffix + fileExtension)
   }
 })
 const upload = multer({ storage: storage })
@@ -590,57 +630,6 @@ const BioSchema = new mongoose.Schema({
 
 const bio = mongoose.model("bio", BioSchema);
 
-// Authenticate the user
-const authenticateUser = async (req, res, next) => {
-  const accessToken = req.header("Authorization");
-  try {
-    const user = await User.findOne({accessToken: accessToken});
-    if (user) {
-      next();
-    } else {
-      res.status(401).json({
-        success: false,
-        response: "Please log in",
-        loggedOut: true
-      })
-    }
-  } catch (e) {
-    res.status(500).json({
-      success: false,
-      response: e
-    });
-  }
-}
-
-app.get("/bio", authenticateUser);
-app.get("/bio", async (req, res) => {
-  try {
-    const accessToken = req.header("Authorization");
-    const user = await User.findOne({ accessToken: accessToken })
-
-    if (user) {
-      const bio = await bio.find({ username: user._id }).sort({ createdAt: -1 }).limit(20)
-      res.status(200).json({
-        success: true,
-        response: bio,
-      });
-    } else {
-      res.status(401).json({
-        success: false,
-        response: "Please log in",
-        loggedOut: true,
-      });
-    }
-  } catch (e) {
-    res.status(500).json({
-      success: false,
-      response: e,
-      message: "Ground control... Abort Abort!",
-    });
-  }
-});
-
-
 
 app.get("/bio", authenticateUser);
 app.get("/bio", async (req, res) => {
@@ -675,19 +664,19 @@ app.post("/bio", async (req, res) => {
   try {
     const { message } = req.body;
     const accessToken = req.header("Authorization");
-    const user = await User.findOne({accessToken: accessToken});
+    const user = await User.findOne({ accessToken: accessToken });
     const bio = await new bio({
-      message: message, 
+      message: message,
       username: user._id
     }).save();
     res.status(201).json({
-      success: true, 
+      success: true,
       response: bio
     })
   } catch (e) {
     res.status(500).json({
-      success: false, 
-      response: e, 
+      success: false,
+      response: e,
       message: "nope get out"
     });
   }
@@ -698,31 +687,31 @@ app.put("/bio", async (req, res) => {
   try {
     const { message } = req.body;
     const accessToken = req.header("Authorization");
-    const user = await User.findOne({accessToken: accessToken});
-    
+    const user = await User.findOne({ accessToken: accessToken });
+
     // Find and update the bio, returning the updated bio
     const updatedBio = await bio.findOneAndUpdate(
       { username: user._id }, // Find bio by user's _id
       { message: message }, // Update the message
       { new: true } // Option to return the updated document
     );
-    
+
     if (!updatedBio) {
       return res.status(404).json({
-        success: false, 
-        response: "Bio not found", 
+        success: false,
+        response: "Bio not found",
       });
     }
-    
+
     res.status(200).json({
-      success: true, 
+      success: true,
       response: updatedBio
     });
-    
+
   } catch (e) {
     res.status(500).json({
-      success: false, 
-      response: e, 
+      success: false,
+      response: e,
       message: "An error occurred"
     });
   }
