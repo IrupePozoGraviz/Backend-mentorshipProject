@@ -4,7 +4,7 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import validator from 'validator';
-import cloudinary from 'cloudinary';
+// import cloudinary from 'cloudinary';
 
 import multer from 'multer';
 import path from 'path';
@@ -77,7 +77,7 @@ const PreferenceSchema = new mongoose.Schema({
   preference: {
     type: String,
     required: true,
-    enum: ["fullstack", "frontend", "backend", "react", "javascript", "python", "java", "c++", "c#", "ruby", "php", "sql", "html", "css", "node", "angular", "vue", "swift", "kotlin", "flutter", "react native", "android", "ios", "unity"]
+    enum: ["fullstack", "frontend", "backend", "react", "javascript", "python", "java"]
   }
 });
 const Preference = mongoose.model("Preference", PreferenceSchema);
@@ -124,7 +124,7 @@ const UserSchema = new mongoose.Schema({
 // should this array contain all of the actual matches that occurred, or all the POTENTIAL matches that this person is aligable to have? Or should this be two different posts?
 likedPersons : { 
  
-  type: String,
+  type: ["String"],
 },
   bio: {
     type: String,
