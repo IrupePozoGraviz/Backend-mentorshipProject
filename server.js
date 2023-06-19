@@ -124,7 +124,7 @@ const UserSchema = new mongoose.Schema({
 // should this array contain all of the actual matches that occurred, or all the POTENTIAL matches that this person is aligable to have? Or should this be two different posts?
 likedPersons : { 
  
-  type: ["String"],
+  type: [String],
 },
   bio: {
     type: String,
