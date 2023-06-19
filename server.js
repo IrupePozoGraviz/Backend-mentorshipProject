@@ -4,7 +4,6 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import validator from 'validator';
-// import cloudinary from 'cloudinary';
 
 import multer from 'multer';
 import path from 'path';
@@ -38,11 +37,7 @@ mongoose.Promise = Promise;
 // PORT=9000 npm start
 const port = process.env.PORT || 8080;
 
-/*cloudinary.config({ 
-  cloud_name: process.env.CLOUDINARY_dqd1yjhik, 
-  api_key:  process.env.CLOUDINARY_166187974799115 , 
-  api_secret:  process.env.CLOUDINARY_iDg6zo3PUpSL_hwVJGXxyonDuAg 
-});*/
+
 // Socket.io logic here
 const http = require('http').createServer(app);
 //http.createServer(app)
@@ -73,14 +68,14 @@ app.get("/", (req, res) => {
 
 
 // user och preferences
-const PreferenceSchema = new mongoose.Schema({
+/*const PreferenceSchema = new mongoose.Schema({
   preference: {
     type: String,
     required: true,
     enum: ["fullstack", "frontend", "backend", "react", "javascript", "python", "java"]
   }
 });
-const Preference = mongoose.model("Preference", PreferenceSchema);
+const Preference = mongoose.model("Preference", PreferenceSchema);*/
 
 const UserSchema = new mongoose.Schema({
   username: {
@@ -111,10 +106,11 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
- preferences: [{
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "Preference",
-  }],
+  preference: {
+    type: String,
+    required: true,
+    enum: ["fullstack", "frontend", "backend", "react", "javascript", "python", "java"]
+  },
 
   role: {
     type: String,
@@ -455,7 +451,7 @@ const calculateMatchScore = (mentorPreferences, menteePreferences) => {
 app.get('/preferences', async (req, res) => {
   try {
     const users = await User.find();
-    const preferences = users.map(user => user.preferences).flat();
+    const preferences = users.map(user => user.preference);
     const uniquePreferences = [...new Set(preferences)];
 
     res.status(200).json({
@@ -464,13 +460,14 @@ app.get('/preferences', async (req, res) => {
         preferences: uniquePreferences,
       }
     });
-  } catch(e) {
+  } catch (e) {
     res.status(500).json({
       success: false,
       response: e
     });
   }
 });
+
 
 // for profile picture upload
 /*const storage = multer.diskStorage({
