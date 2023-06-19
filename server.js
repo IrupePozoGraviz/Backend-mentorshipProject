@@ -108,7 +108,7 @@ const UserSchema = new mongoose.Schema({
   },
   preference: {
     type: String,
-    required: true,
+    //required: true,
     enum: ["fullstack", "frontend", "backend", "react", "javascript", "python", "java"]
   },
 
