@@ -4,6 +4,7 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import validator from 'validator';
+import cloudinary from 'cloudinary';
 
 import multer from 'multer';
 import path from 'path';
@@ -18,7 +19,7 @@ const app = express(); // Create the Express application
 // Add middlewares to enable cors and json body parsing
 const corsOptions = {
   origin: '*', // Allow all origins
-  methods: ['GET', 'POST'], // Allow GET and POST requests
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'], // Allow GET and POST requests
   preflightContinue: false, // Enable preflight requests
   optionsSuccessStatus: 204, // Return 204 status for successful preflight requests
 };
@@ -37,7 +38,11 @@ mongoose.Promise = Promise;
 // PORT=9000 npm start
 const port = process.env.PORT || 8080;
 
-
+cloudinary.config({ 
+  cloud_name: process.env.CLOUDINARY_dqd1yjhik, 
+  api_key:  process.env.CLOUDINARY_166187974799115 , 
+  api_secret:  process.env.CLOUDINARY_iDg6zo3PUpSL_hwVJGXxyonDuAg 
+});
 // Socket.io logic here
 const http = require('http').createServer(app);
 //http.createServer(app)
@@ -468,7 +473,7 @@ app.get('/preferences', async (req, res) => {
 });
 
 // for profile picture upload
-const storage = multer.diskStorage({
+/*const storage = multer.diskStorage({
   destination: function (req, file, cb) {
     cb(null, 'uploads/')
   },
@@ -477,8 +482,12 @@ const storage = multer.diskStorage({
  const fileExtension = path.extname(file.originalname)
   cb(null, file.fieldname + '-' + uniqueSuffix + fileExtension) 
   }
-})
-const upload = multer({ storage: storage })
+}):*/
+/*const upload = multer({ storage: storage })*/
+const upload = multer({
+  storage: multer.memoryStorage()
+});
+
 
 // Endpoint for uploading a profile picture
 // Middleware for serving uploaded files
@@ -489,11 +498,20 @@ app.post('/user/:userId/upload-profile-picture', upload.single('profilePicture')
   const userId = req.params.userId;
   const profilePicture = req.file;
 
-  // Update the user's profile picture in the database
+  if (!profilePicture) {
+    return res.status(400).json({ error: 'No file provided' });
+  }
+
   try {
+    const result = await cloudinary.uploader.upload(profilePicture.path, {
+      folder: 'profile-pictures',
+      public_id: `user-${userId}`,
+      overwrite: true
+    });
+
     await User.findOneAndUpdate(
       { _id: userId },
-      { profilePicture: profilePicture.filename }
+      { profilePicture: result.secure_url }
     );
 
     res.status(200).json({
@@ -502,32 +520,10 @@ app.post('/user/:userId/upload-profile-picture', upload.single('profilePicture')
       file: profilePicture
     });
   } catch (error) {
+    console.error(error);
     res.status(500).json({
       success: false,
       message: 'Failed to upload profile picture',
-      error: error.message
-    });
-  }
-});
-
-// Endpoint for retrieving a profile picture
-app.get('/user/:userId/profile-picture', async (req, res) => {
-  const userId = req.params.userId;
-
-  try {
-    const user = await User.findById(userId);
-    if (user && user.profilePicture) {
-      res.status(200).sendFile(path.join(__dirname, `uploads/${user.profilePicture}`));
-    } else {
-      res.status(404).json({
-        success: false,
-        message: 'Profile picture not found'
-      });
-    }
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to retrieve profile picture',
       error: error.message
     });
   }
