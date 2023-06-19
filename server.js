@@ -106,11 +106,10 @@ const UserSchema = new mongoose.Schema({
     type: Boolean,
     default: false,
   },
-  preference: {
+  preferences: [{
     type: String,
-    //required: true,
     enum: ["fullstack", "frontend", "backend", "react", "javascript", "python", "java"]
-  },
+  }],
 
   role: {
     type: String,
@@ -159,9 +158,6 @@ app.post("/register", async (req, res) => {
   try {
     const salt = bcrypt.genSaltSync();
     const verificationToken = crypto.randomBytes(16).toString("hex"); // Generate a random verification token
-    const newPreferences = await Promise.all(preferences.map(async (preference) => {
-      return await new Preference({ preference }).save();
-    }));
 
     const newUser = await new User({
       username: username,
@@ -170,7 +166,7 @@ app.post("/register", async (req, res) => {
       lastName: lastName,
       password: bcrypt.hashSync(password, salt),
       verificationToken: verificationToken, // Assign the verification token to the user
-      preferences: newPreferences.map((preference) => preference._id),
+      preferences: preferences,
       role: role,
     }).save();
 
