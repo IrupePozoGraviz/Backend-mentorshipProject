@@ -335,38 +335,46 @@ använd userId som skickades med i bodyn för att spara i inloggade userns liked
 }*/
 
 app.patch("/likedPersons/:userId", async (req, res) => {
-  const {likedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
+  const { likedUserId } = req.body; // User to be liked (use req.body in the frontend)
   const { userId } = req.params; // Extract the userId from the URL parameters
 
-  console.log('likedUserId', likedUserId)
-  console.log('userId parama', userId)
- if( userId){
-  try {
+  console.log('likedUserId', likedUserId);
+  console.log('userId param', userId);
 
+  try {
     const userToUpdate = await User.findById(userId); // Find the logged-in user by their ID
-    const likedUser= await User.findById(likedUserId)
-    const likedIndex = likedUser.likedPersons.findIndex(
-      (likedPerson) =>
-        likedPerson._id === userId || likedPerson.id === userId
-    );
-    
-    if (userToUpdate) {
-      console.log('userToUpdate', userToUpdate)
-      userToUpdate.likedPersons.push({id:likedUserId, isMatched:likedIndex == -1? false: true}); // Add the likedUserId to the likedPersons array of the logged-in user
-  
-      // Save the updated user with the new likedPersons array
-      const updatedUser = await userToUpdate.save();
-  
-      res.json(updatedUser); // Return the updated user as the response
+    const likedUser = await User.findById(likedUserId);
+
+    if (userToUpdate && likedUser) {
+      // Check if the likedUserId exists in the likedPersons array of the logged-in user
+      const likedIndex = userToUpdate.likedPersons.findIndex(
+        (likedPerson) => likedPerson.id === likedUserId
+      );
+
+      if (likedIndex !== -1) {
+        // Update the isMatched flag for both the logged-in user and the liked user
+        userToUpdate.likedPersons[likedIndex].isMatched = true;
+        likedUser.likedPersons.find(
+          (likedPerson) => likedPerson.id === userId
+        ).isMatched = true;
+
+        // Save the updated users
+        const updatedUser = await userToUpdate.save();
+        const updatedLikedUser = await likedUser.save();
+
+        res.json({
+          userToUpdate: updatedUser,
+          likedUser: updatedLikedUser,
+        });
+      } else {
+        res.status(404).json({ error: "Liked user not found" });
+      }
     } else {
-      res.status(404).json({error: 'User not found'})
+      res.status(404).json({ error: "User not found" });
     }
-   
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
-  }} else {
-    res.status(404).json({error: 'User not found'})
   }
 });
 
