@@ -340,7 +340,7 @@ app.patch("/likedPersons/:userId", async (req, res) => {
 
   console.log('likedUserId', likedUserId)
   console.log('userId parama', userId)
-
+ if( userId){
   try {
 
     const userToUpdate = await User.findById(userId); // Find the logged-in user by their ID
@@ -359,6 +359,8 @@ app.patch("/likedPersons/:userId", async (req, res) => {
   } catch (error) {
     console.error(error);
     res.status(500).json({ error: "Something went wrong" });
+  }} else {
+    res.status(404).json({error: 'User not found'})
   }
 });
 
