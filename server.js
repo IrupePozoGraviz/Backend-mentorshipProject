@@ -335,7 +335,7 @@ använd userId som skickades med i bodyn för att spara i inloggade userns liked
 }*/
 
 app.patch("/likedPersons/:userId", async (req, res) => {
-  const {likedUserId} = req.body // Riktiga som vi vill likea (använd req.body i frontend)
+  const {likedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
   const { userId } = req.params; // Extract the userId from the URL parameters
 
   console.log('likedUserId', likedUserId)
@@ -365,6 +365,8 @@ app.patch("/likedPersons/:userId", async (req, res) => {
     res.status(404).json({error: 'User not found'})
   }
 });
+
+
 
 app.patch("/dislikedPersons/:userId", async (req, res) => { 
   const {dislikedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
