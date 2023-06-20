@@ -119,7 +119,7 @@ const UserSchema = new mongoose.Schema({
 // should this array contain all of the actual matches that occurred, or all the POTENTIAL matches that this person is aligable to have? Or should this be two different posts?
 likedPersons : { 
  
-  type: [String],
+  type: [{id: String, isMatched: {type: Boolean, default: false}}],
 },
   bio: {
     type: String,
@@ -344,9 +344,11 @@ app.patch("/likedPersons/:userId", async (req, res) => {
   try {
 
     const userToUpdate = await User.findById(userId); // Find the logged-in user by their ID
+    const likedUser= await User.findById(likedUserId)
+    const likedIndex= likedUser.likedPersons.findIndex(likedPerson => likedPerson._id === userId)
     if (userToUpdate) {
       console.log('userToUpdate', userToUpdate)
-      userToUpdate.likedPersons.push(likedUserId); // Add the likedUserId to the likedPersons array of the logged-in user
+      userToUpdate.likedPersons.push({id:likedUserId, isMatched:likedIndex == -1? false: true}); // Add the likedUserId to the likedPersons array of the logged-in user
   
       // Save the updated user with the new likedPersons array
       const updatedUser = await userToUpdate.save();
