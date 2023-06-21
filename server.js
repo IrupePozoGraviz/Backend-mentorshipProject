@@ -108,7 +108,7 @@ const UserSchema = new mongoose.Schema({
   },
   preferences: [{
     type: String,
-    enum: ["fullstack ", "frontend ", "backend ", "react ", "javascript ", "python ", "java "]
+    enum: ["fullstack ", "frontend ", "backend ", "react ", "javascript ", "python ", "java"]
   }],
 
   role: {
@@ -352,28 +352,21 @@ app.patch("/likedPersons/:userId", async (req, res) => {
   
       // Save the updated user with the new likedPersons array
       const updatedUser = await userToUpdate.save();
-  // check if there is a match
-      if(likedIndex != -1){
-        res.json(updatedUser); // Return the updated user as the response
-
+  
+      res.json(updatedUser); // Return the updated user as the response
     } else {
-     res.json({moveToAnotherComponent :true }); // Return the updated user as the response
+      res.status(404).json({error: 'User not found'})
     }
-    } else {
-      res.status(400).json({
-        success: false,
-        response: "User not found"
-      });
-    }
+   
   } catch (error) {
-    console.log(error)
-    res.status(500).json({
-      success: false,
-      response: error
-    });
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }} else {
+    res.status(404).json({error: 'User not found'})
   }
-}
 });
+
+
 
 app.patch("/dislikedPersons/:userId", async (req, res) => { 
   const {dislikedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
