@@ -317,6 +317,12 @@ app.get('/users/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
     const user = await User.findOne({ _id: req.params.userId });
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        response: 'User not found',
+      });
+    }
     const users = await User.find();
     let filteredUsers;
     if (user.role === 'mentor') {
@@ -341,13 +347,11 @@ app.get('/users/:userId', async (req, res) => {
   } catch (error) {
     res.status(500).json({
       success: false,
-      error: 'An error occurred',
+      response: error.message,
     });
   }
 });
 
-   
- 
 
 /* app.patch("like person or something", async (req, res) => {
  använd inloggade user id för att hitta vilken user som ska uppdateras.
