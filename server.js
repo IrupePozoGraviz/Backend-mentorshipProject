@@ -108,7 +108,7 @@ const UserSchema = new mongoose.Schema({
   },
   preferences: [{
     type: String,
-    enum: ["fullstack", "frontend", "backend", "react", "javascript", "python", "java"]
+    enum: ["fullstack ", "frontend ", "backend ", "react ", "javascript ", "python ", "java "]
   }],
 
   role: {
