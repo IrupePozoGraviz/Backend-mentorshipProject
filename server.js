@@ -345,10 +345,11 @@ app.patch("/likedPersons/:userId", async (req, res) => {
 
     const userToUpdate = await User.findById(userId); // Find the logged-in user by their ID
     const likedUser= await User.findById(likedUserId)
-    const likedIndex= likedUser.likedPersons.findIndex(likedPerson => likedPerson._id === userId)
+    const likedIndex= likedUser.likedPersons.findIndex(likedPerson => likedPerson.id === userId)
     if (userToUpdate) {
       console.log('userToUpdate', userToUpdate)
-      userToUpdate.likedPersons.push({id:likedUserId, isMatched:likedIndex == -1? false: true}); // Add the likedUserId to the likedPersons array of the logged-in user
+      const shouldMatch = likedIndex !== -1? true: false
+      userToUpdate.likedPersons.push({id:likedUserId, isMatched: shouldMatch}); // Add the likedUserId to the likedPersons array of the logged-in user
   
       // Save the updated user with the new likedPersons array
       const updatedUser = await userToUpdate.save();
