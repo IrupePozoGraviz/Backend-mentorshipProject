@@ -313,22 +313,42 @@ app.delete("/user/:userId", async (req, res) => {
 //here if you are a mentor you get a list of mentees if 
 //you are a mentee you get a list of mentors, 
 //additionally if you want to expand on that you can show only the users with matching preferences
-app.get('/users', async (req, res) => {
+app.get('/users/:userId', async (req, res) => {
+  const { userId } = req.params;
   try {
+    const user = await User.findOne({ _id: req.params.userId });
     const users = await User.find();
+    let filteredUsers;
+    if (user.role === 'mentor') {
+      filteredUsers = users.filter((user) => user.role === 'mentee');
+    } else {
+      filteredUsers = users.filter((user) => user.role === 'mentor');
+    }
+    const result = filteredUsers.filter((user) => {
+      const likedIndex = user.likedPersons.findIndex(
+        (likedPerson) => likedPerson.id === userId
+      );
+      if (likedIndex === -1) {
+        return true;
+      }
+    });
     res.status(200).json({
       success: true,
       response: {
-        users: users
-      }
+        users: result,
+      },
     });
-  } catch (e) {
+  } catch (error) {
     res.status(500).json({
       success: false,
-      response: e
+      error: 'An error occurred',
     });
   }
 });
+
+   
+ 
+
 /* app.patch("like person or something", async (req, res) => {
  använd inloggade user id för att hitta vilken user som ska uppdateras.
 använd userId som skickades med i bodyn för att spara i inloggade userns likedPersons array
