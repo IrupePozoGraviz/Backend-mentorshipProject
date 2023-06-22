@@ -328,8 +328,8 @@ app.get('/users/:userId', async (req, res) => {
     } else {
       filteredUsers = users.filter((user) => user.role === 'mentor');
     }
-    const result = filteredUsers.filter((user) => {
-      const likedIndex = user.likedPersons.findIndex(
+    const result = filteredUsers.filter((singleUser) => {
+      const likedIndex = singleUser.likedPersons.findIndex(
         (likedPerson) => likedPerson.id === userId
       );
       if (likedIndex === -1) {
