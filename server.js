@@ -262,12 +262,8 @@ const user = await User.findOneAndUpdate( {_id: req.params.userId}, {
 if (user) {
   res.status(200).json({
     success: true,
-    response: {
-      username: user.username,
-      id: user._id,
-      preferences: user.preferences,
-      message: "User updated"
-    }
+    response: user
+  
   });
 } else {
   res.status(400).json({
