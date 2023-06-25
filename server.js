@@ -6,10 +6,8 @@ import bcrypt from "bcrypt";
 import validator from 'validator';
 
 import multer from 'multer';
-import path from 'path';
 import listEndpoints from "express-list-endpoints";
 import dotenv from 'dotenv';
-import { stringify } from "querystring";
 dotenv.config();
 require('dotenv').config();
 
@@ -33,8 +31,7 @@ mongoose.connect(mongoUrl, { useNewUrlParser: true, useUnifiedTopology: true });
 mongoose.Promise = Promise;
 
 // Defines the port the app will run on. Defaults to 8080, but can be overridden
-// when starting the server. Example command to overwrite PORT env variable value:
-// PORT=9000 npm start
+
 const port = process.env.PORT || 8080;
 
 
@@ -66,16 +63,6 @@ app.get("/", (req, res) => {
 
 });
 
-
-// user och preferences
-/*const PreferenceSchema = new mongoose.Schema({
-  preference: {
-    type: String,
-    required: true,
-    enum: ["fullstack", "frontend", "backend", "react", "javascript", "python", "java"]
-  }
-});
-const Preference = mongoose.model("Preference", PreferenceSchema);*/
 
 const UserSchema = new mongoose.Schema({
   username: {
@@ -114,9 +101,8 @@ const UserSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ["mentor", "mentee"],
-    // required: true,
   },
-// should this array contain all of the actual matches that occurred, or all the POTENTIAL matches that this person is aligable to have? Or should this be two different posts?
+
 likedPersons : { 
  
   type: [{ id: String, isMatched: { type: Boolean, default: false } }],
@@ -143,7 +129,7 @@ likedPersons : {
 
 const User = mongoose.model("User", UserSchema);
 
-// CREATE REGISTRATION - Irro- // e mail går även att använda i login
+// REGISTRATION 
 app.post("/register", async (req, res) => {
   const { username, password, email, lastName, firstName, preferences, role } = req.body;
 
@@ -211,8 +197,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// /user/:userId - GET - get single user - doesn't matter if it's a mentee or a mentor
-// below is an endpoint to get a single user
+// Get a single user by id
 app.get("/user/:userId", async (req, res) => {
 
   try {
@@ -245,7 +230,7 @@ app.get("/user/:userId", async (req, res) => {
 
 
 
-// /user/:userId - PATCH - update single user - their preferences or whatever you need
+// PATCH - update single user by id
 
 app.patch("/user/:userId", async (req, res) => {
   const { firstName, lastName, password, email, username, preference } = req.body;
@@ -351,10 +336,7 @@ app.get('/users/:userId', async (req, res) => {
 });
 
 
-/* app.patch("like person or something", async (req, res) => {
- använd inloggade user id för att hitta vilken user som ska uppdateras.
-använd userId som skickades med i bodyn för att spara i inloggade userns likedPersons array
-}*/
+//Liked persons -to be able to match by liked persons
 
 app.patch("/likedPersons/:userId", async (req, res) => {
   const {likedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
@@ -390,12 +372,12 @@ app.patch("/likedPersons/:userId", async (req, res) => {
 });
 
 
-
+//Disliked persons -to be able to NOT CHOOSE A PERSON
 app.patch("/dislikedPersons/:userId", async (req, res) => { 
-  const {dislikedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
+  const {dislikedUserId} = req.body 
 
   console.log('dislikedUserId', dislikedUserId) 
-  const loggedInUserId = req.userId; // Assuming you have stored the logged-in user's ID in the req.userId property
+  const loggedInUserId = req.userId; 
   const { userId } = req.params; // Extract the userId from the URL parameters
   console.log('loggedInUserId', loggedInUserId) 
   console.log('userId params', userId) 
@@ -418,7 +400,7 @@ app.patch("/dislikedPersons/:userId", async (req, res) => {
 });
 
 // add a GET request to match a mentor with a mentee and vice versa
-// /users/:userId/match - GET - get a list of users -
+// this one is not used for now
 app.get("/match", async (req, res) => {
   try {
     const mentors = await User.find({ role: "mentor" }).populate("preferences");
@@ -438,7 +420,7 @@ app.get("/match", async (req, res) => {
   }
 });
 
-// Matching Logic
+// Matching Logic - not used for now
 const matchMentorsWithMentees = (mentors, mentees) => {
   const matchedPairs = [];
 
@@ -495,17 +477,8 @@ app.get('/preferences', async (req, res) => {
 
 
 // for profile picture upload
-/*const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, 'uploads/')
-  },
-  filename: function(req, file, cb) {
- const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
- const fileExtension = path.extname(file.originalname)
-  cb(null, file.fieldname + '-' + uniqueSuffix + fileExtension) 
-  }
-}):*/
-/*const upload = multer({ storage: storage })*/
+/*We dont have a storage for it yet*/
+
 const upload = multer({
   storage: multer.memoryStorage()
 });
@@ -576,7 +549,7 @@ app.delete('/user/:userId/delete-profile-picture', async (req, res) => {
 });
 
 
-
+//For user to be able to write about them selves (not used yet)
 const BioSchema = new mongoose.Schema({
   message: {
     type: String,
