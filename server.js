@@ -35,7 +35,7 @@ mongoose.Promise = Promise;
 const port = process.env.PORT || 8080;
 
 
-// Socket.io logic here
+// Socket.io logic here not used yet
 const http = require('http').createServer(app);
 //http.createServer(app)
 // const Server = http.createServer(app);
