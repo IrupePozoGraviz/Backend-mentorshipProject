@@ -103,12 +103,20 @@ const UserSchema = new mongoose.Schema({
     enum: ["mentor", "mentee"],
   },
 
-likedPersons : { 
- 
-  type: [{ id: String, isMatched: { type: Boolean, default: false } }],
-  default: [],
-
-},
+  likedPersons: [{
+    id: String,
+    isMatched: {
+      type: Boolean,
+      default: false
+    }
+  }],
+  matchedPersons: [{
+    id: String,
+    isMatched: {
+      type: Boolean,
+      default: false
+    }
+  }],
   bio: {
     type: String,
     default: ''
@@ -335,41 +343,104 @@ app.get('/users/:userId', async (req, res) => {
   }
 });
 
-
-//Liked persons -to be able to match by liked persons
-
-app.patch("/likedPersons/:userId", async (req, res) => {
-  const {likedUserId} = req.body // usern som vi vill likea (använd req.body i frontend)
+// Show current users liked persons (mentors or mentees)
+app.get('/likedPersons/:userId', async (req, res) => {
   const { userId } = req.params; // Extract the userId from the URL parameters
-
-  console.log('likedUserId', likedUserId)
-  console.log('userId parama', userId)
- if( userId){
-  try {
-
-    const userToUpdate = await User.findById(userId); // Find the logged-in user by their ID
-    const likedUser= await User.findById(likedUserId)
-    const likedIndex= likedUser.likedPersons.findIndex(likedPerson => likedPerson.id === userId)
-    if (userToUpdate) {
-      console.log('userToUpdate', userToUpdate)
-      const shouldMatch = likedIndex !== -1? true: false
-      userToUpdate.likedPersons.push({id:likedUserId, isMatched: shouldMatch}); // Add the likedUserId to the likedPersons array of the logged-in user
   
-      // Save the updated user with the new likedPersons array
-      const updatedUser = await userToUpdate.save();
-  
-      res.json(updatedUser); // Return the updated user as the response
-    } else {
-      res.status(404).json({error: 'User not found'})
+  if (userId) {
+    try {
+      const user = await User.findById(userId); // Find the logged-in user by their ID
+      
+      if (user) {
+        res.status(200).json({
+          success: true,
+          response: {
+            likedPersons: user.likedPersons,
+          },
+        });
+      } else {
+        res.status(400).json({
+          success: false,
+          response: 'User not found',
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        response: error.message,
+      });
     }
-   
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Something went wrong" });
-  }} else {
-    res.status(404).json({error: 'User not found'})
+  } else {
+    res.status(400).json({
+      success: false,
+      response: 'User ID not provided',
+    });
   }
 });
+
+
+
+
+//current User to be able to like another user that updates the current users 
+//likedPerssons array with that new likedperson - PATCH - update single user by id
+
+//User to be able to like another user - PATCH - update single user by id
+
+app.patch('/likedPersons/:userId', async (req, res) => {
+  const { likedUserId } = req.body; // User we want to like (use req.body in the frontend)
+  const { userId } = req.params; // Extract the userId from the URL parameters
+
+  if (userId) {
+    try {
+      const userToUpdate = await User.findById(userId); // Find the logged-in user by their ID
+      const likedUser = await User.findById(likedUserId);
+
+      if (userToUpdate && likedUser) {
+        const likedIndex = likedUser.likedPersons.findIndex(
+          (likedPerson) => likedPerson.id === userId
+        );
+
+        const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
+          (likedPerson) => likedPerson.id === likedUserId
+        );
+
+        const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1; // Check if there is a mutual like
+
+        userToUpdate.likedPersons.push({
+          id: likedUserId,
+          isMatched: shouldMatch,
+        }); // Add the likedUserId to the likedPersons array of the logged-in user
+
+        if (shouldMatch) {
+          userToUpdate.matchedPersons.push({
+            id: likedUserId,
+            isMatched: true,
+          }); // Add the likedUserId to the matchedPersons array of the logged-in user
+
+          likedUser.matchedPersons.push({
+            id: userId,
+            isMatched: true,
+          }); // Add the logged-in userId to the matchedPersons array of the liked user
+        }
+
+        // Save the updated users with the new likedPersons and matchedPersons arrays
+        await userToUpdate.save();
+        await likedUser.save();
+
+        res.json(userToUpdate); // Return the updated user as the response
+      } else {
+        res.status(404).json({ error: 'User not found' });
+      }
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Something went wrong' });
+    }
+  } else {
+    res.status(404).json({ error: 'User not found' });
+  }
+});
+
+
 
 
 //Disliked persons -to be able to NOT CHOOSE A PERSON
@@ -398,6 +469,29 @@ app.patch("/dislikedPersons/:userId", async (req, res) => {
     res.status(500).json({ error: "Something went wrong" });
   }
 });
+/*--------------------current user to be able to see their matched persons------------------------*/
+app.get('/matchedPersons/:userId', async (req, res) => {
+  const { userId } = req.params; // Extract the userId from the URL parameters
+
+  try {
+    const user = await User.findById(userId); // Find the user by their ID
+
+    if (user) {
+      const matchedPersons = user.matchedPersons; // Get the array of matched persons
+
+      res.status(200).json({
+        success: true,
+        matchedPersons: matchedPersons,
+      });
+    } else {
+      res.status(404).json({ error: 'User not found' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
+
 
 // add a GET request to match a mentor with a mentee and vice versa
 // this one is not used for now
