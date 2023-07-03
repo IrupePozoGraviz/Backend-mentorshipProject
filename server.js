@@ -351,13 +351,13 @@ app.get('/likedpersons/:userId', async (req, res) => {
   
   if (userId) {
     try {
-      const user = await User.findById(userId); // Find the logged-in user by their ID
+      const user = await User.findById(userId).populate('likedPersons.id'); // Find the logged-in user by their ID
       
       if (user) {
         res.status(200).json({
           success: true,
           response: {
-            likedPersons: user.likedPersons,
+            likedPersons: user.likedPersons.map((likedPerson) => likedPerson.id),
             firstName: user.firstName,
             username: user.username,
             preferences: user.preferences,
