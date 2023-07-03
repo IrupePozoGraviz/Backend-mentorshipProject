@@ -358,6 +358,11 @@ app.get('/likedpersons/:userId', async (req, res) => {
           success: true,
           response: {
             likedPersons: user.likedPersons,
+            firstName: user.firstName,
+            username: user.username,
+            preferences: user.preferences,
+            role: user.role,
+            message: "User found"
           },
         });
       } else {
