@@ -108,14 +108,16 @@ const UserSchema = new mongoose.Schema({
     isMatched: {
       type: Boolean,
       default: false
-    }
+    },
+    default: []
   }],
   matchedPersons: [{
     id: String,
     isMatched: {
       type: Boolean,
       default: false
-    }
+    },
+    default: []
   }],
   bio: {
     type: String,
