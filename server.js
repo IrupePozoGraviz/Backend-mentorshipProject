@@ -354,6 +354,7 @@ app.get('/likedpersons/:userId', async (req, res) => {
       const user = await User.findById(userId); // Find the logged-in user by their ID
       
       if (user) {
+        res.setHeader('Content-Type', 'application/json'); // Add the Content-Type header
         res.status(200).json({
           success: true,
           response: {
