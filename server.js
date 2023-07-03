@@ -358,7 +358,6 @@ app.get('/likedpersons/:userId', async (req, res) => {
           success: true,
           response: {
             likedPersons: user.likedPersons,
-            'content-type': 'application/json',
           },
         });
       } else {
