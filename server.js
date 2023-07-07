@@ -371,7 +371,7 @@ app.get('/users/:userId', async (req, res) => {
 });
 
 // Show current users liked persons (mentors or mentees)
-app.get('/likedpersons/:userId', async (req, res) => {
+app.get('/likedPersons/:userId', async (req, res) => {
   const { userId } = req.params; // Extract the userId from the URL parameters
   
   if (userId) {
@@ -418,7 +418,7 @@ app.get('/likedpersons/:userId', async (req, res) => {
 
 //User to be able to like another user - PATCH - update single user by id
 
-app.patch('/likedpersons/:userId', async (req, res) => {
+app.patch('/likedPersons/:userId', async (req, res) => {
   const { likedUserId } = req.body; // User we want to like (use req.body in the frontend)
   const { userId } = req.params; // Extract the userId from the URL parameters
 
