@@ -62,7 +62,25 @@ app.get("/", (req, res) => {
   res.send(listEndpoints(app));
 
 });
+//For user to be able to write about them selves (not used yet)
+const BioSchema = new mongoose.Schema({
+  message: {
+    type: String,
+    required: true,
+    minLength: 2,
+    maxLength: 200
+  },
+  createdAt: {
+    type: Date,
+    default: () => new Date()
+  },
+  username: {
+    type: String,
+    required: true
+  }
+});
 
+const bio = mongoose.model("bio", BioSchema);
 
 const UserSchema = new mongoose.Schema({
   username: {
@@ -101,6 +119,12 @@ const UserSchema = new mongoose.Schema({
   role: {
     type: String,
     enum: ["mentor", "mentee"],
+  },
+bio: {
+  type: String,
+  required: true,
+  minLength: 2,
+  maxLength: 200
   },
 
   likedPersons: [{
@@ -141,7 +165,7 @@ const User = mongoose.model("User", UserSchema);
 
 // REGISTRATION 
 app.post("/register", async (req, res) => {
-  const { username, password, email, lastName, firstName, preferences, role } = req.body;
+  const { username, password, email, lastName, firstName, preferences, role, bio } = req.body;
 
   if (!validator.isEmail(email)) {
     res.status(400).json({ message: "Please enter a valid email address" });
@@ -166,6 +190,7 @@ app.post("/register", async (req, res) => {
       verificationToken: verificationToken, // Assign the verification token to the user
       preferences: preferences,
       role: role,
+      bio: bio
     }).save();
 
     res.status(201).json({
@@ -651,25 +676,7 @@ app.delete('/user/:userId/delete-profile-picture', async (req, res) => {
 });
 
 
-//For user to be able to write about them selves (not used yet)
-const BioSchema = new mongoose.Schema({
-  message: {
-    type: String,
-    required: true,
-    minLength: 2,
-    maxLength: 200
-  },
-  createdAt: {
-    type: Date,
-    default: () => new Date()
-  },
-  username: {
-    type: String,
-    required: true
-  }
-});
 
-const bio = mongoose.model("bio", BioSchema);
 
 // Authenticate the user
 const authenticateUser = async (req, res, next) => {
@@ -692,36 +699,6 @@ const authenticateUser = async (req, res, next) => {
     });
   }
 }
-
-app.get("/bio", authenticateUser);
-app.get("/bio", async (req, res) => {
-  try {
-    const accessToken = req.header("Authorization");
-    const user = await User.findOne({ accessToken: accessToken })
-
-    if (user) {
-      const bio = await bio.find({ username: user._id }).sort({ createdAt: -1 }).limit(20)
-      res.status(200).json({
-        success: true,
-        response: bio,
-      });
-    } else {
-      res.status(401).json({
-        success: false,
-        response: "Please log in",
-        loggedOut: true,
-      });
-    }
-  } catch (e) {
-    res.status(500).json({
-      success: false,
-      response: e,
-      message: "Ground control... Abort Abort!",
-    });
-  }
-});
-
-
 
 app.get("/bio", authenticateUser);
 app.get("/bio", async (req, res) => {
