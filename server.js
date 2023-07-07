@@ -62,25 +62,6 @@ app.get("/", (req, res) => {
   res.send(listEndpoints(app));
 
 });
-//For user to be able to write about them selves (not used yet)
-const BioSchema = new mongoose.Schema({
-  message: {
-    type: String,
-    required: true,
-    minLength: 2,
-    maxLength: 200
-  },
-  createdAt: {
-    type: Date,
-    default: () => new Date()
-  },
-  username: {
-    type: String,
-    required: true
-  }
-});
-
-const bio = mongoose.model("bio", BioSchema);
 
 const UserSchema = new mongoose.Schema({
   username: {
@@ -674,11 +655,6 @@ app.delete('/user/:userId/delete-profile-picture', async (req, res) => {
     });
   }
 });
-
-
-
-
-
 
 
 // start the server
