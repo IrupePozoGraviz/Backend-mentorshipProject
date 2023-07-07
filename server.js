@@ -368,6 +368,7 @@ app.get('/likedPersons/:userId', async (req, res) => {
             username: user.username,
             preferences: user.preferences,
             role: user.role,
+            bio: user.bio,
             message: "User found"
           },
         });
