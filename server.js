@@ -434,6 +434,7 @@ app.patch('/likedpersons/:userId', async (req, res) => {
         await userToUpdate.save();
         await likedUser.save();
 
+
         res.json(userToUpdate); // Return the updated user as the response
       } else {
         res.status(404).json({ error: 'User not found' });
