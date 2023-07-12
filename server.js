@@ -117,7 +117,6 @@ bio: {
       type: Boolean,
       default: false,
     },
-    default: []
   }],
   
   matchedPersons: [{
@@ -129,7 +128,6 @@ bio: {
       type: Boolean,
       default: false,
     },
-    default: []
   }],
   bio: {
     type: String,
@@ -364,7 +362,7 @@ app.get('/likedPersons/:userId', async (req, res) => {
   
   if (userId) {
     try {
-      const user = await User.findById(userId).populate('likedPersons');
+      const user = await User.findById(userId).populate('likedPersons.user');
 
       if (user) {
         res.status(200).json({
@@ -417,15 +415,28 @@ app.patch('/likedPersons/:userId', async (req, res) => {
       const likedUser = await User.findById(likedUserId);
 
       if (userToUpdate && likedUser) {
-        const likedIndex = likedUser.likedPersons.indexOf(userId);
-        const mutualLikedIndex = userToUpdate.likedPersons.indexOf(likedUserId);
+        const likedIndex = likedUser.likedPersons.findIndex(
+          (likedPerson) => likedPerson.id === userId
+        );
+        const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
+          (likedPerson) => likedPerson.id === likedUserId
+        );
         const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
 
-        userToUpdate.likedPersons.push(likedUserId);
+        userToUpdate.likedPersons.push({
+          id: likedUserId,
+          isMatched: shouldMatch,
+        });
 
         if (shouldMatch) {
-          userToUpdate.matchedPersons.push(likedUserId);
-          likedUser.matchedPersons.push(userId);
+          userToUpdate.matchedPersons.push({
+            id: likedUserId,
+            isMatched: true,
+          });
+          likedUser.matchedPersons.push({
+            id: userId,
+            isMatched: true,
+          });
         }
 
         await userToUpdate.save();
@@ -443,7 +454,6 @@ app.patch('/likedPersons/:userId', async (req, res) => {
     res.status(404).json({ error: 'User not found' });
   }
 });
-
 
 
 
