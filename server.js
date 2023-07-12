@@ -117,6 +117,7 @@ bio: {
       type: Boolean,
       default: false,
     },
+    default: []
   }],
   
   matchedPersons: [{
@@ -128,6 +129,7 @@ bio: {
       type: Boolean,
       default: false,
     },
+    default: []
   }],
   bio: {
     type: String,
@@ -362,13 +364,13 @@ app.get('/likedPersons/:userId', async (req, res) => {
   
   if (userId) {
     try {
-      const user = await User.findById(userId).populate('likedPersons.user'); // Find the logged-in user by their ID and populate the likedPersons field with the complete user objects
-      
+      const user = await User.findById(userId).populate('likedPersons');
+
       if (user) {
         res.status(200).json({
           success: true,
           response: {
-            likedPersons: user.likedPersons.map((likedPerson) => likedPerson.user),
+            likedPersons: user.likedPersons.map((likedPerson) => likedPerson),
             firstName: user.firstName,
             username: user.username,
             preferences: user.preferences,
@@ -415,31 +417,15 @@ app.patch('/likedPersons/:userId', async (req, res) => {
       const likedUser = await User.findById(likedUserId);
 
       if (userToUpdate && likedUser) {
-        const likedIndex = likedUser.likedPersons.findIndex(
-          (likedPerson) => likedPerson.user.toString() === userId
-        );
+        const likedIndex = likedUser.likedPersons.indexOf(userId);
+        const mutualLikedIndex = userToUpdate.likedPersons.indexOf(likedUserId);
+        const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
 
-        const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
-          (likedPerson) => likedPerson.user.toString() === likedUserId
-        );
-
-        const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1; // Check if there is a mutual like
-
-        userToUpdate.likedPersons.push({
-          user: likedUserId,
-          isMatched: shouldMatch,
-        });
+        userToUpdate.likedPersons.push(likedUserId);
 
         if (shouldMatch) {
-          userToUpdate.matchedPersons.push({
-            user: likedUserId,
-            isMatched: true,
-          });
-
-          likedUser.matchedPersons.push({
-            user: userId,
-            isMatched: true,
-          });
+          userToUpdate.matchedPersons.push(likedUserId);
+          likedUser.matchedPersons.push(userId);
         }
 
         await userToUpdate.save();
