@@ -232,6 +232,7 @@ app.get("/user/:userId", async (req, res) => {
           username: user.username,
           preferences: user.preferences,
           role: user.role,
+          bio: user.bio,
           message: "User found"
         }
       });
@@ -357,18 +358,24 @@ app.get('/users/:userId', async (req, res) => {
 });
 
 // Show current users liked persons (mentors or mentees)
+// Show current user's liked persons (mentors or mentees)
 app.get('/likedPersons/:userId', async (req, res) => {
   const { userId } = req.params; // Extract the userId from the URL parameters
   
   if (userId) {
     try {
-      const user = await User.findById(userId).populate('likedPersons.user');
+      const user = await User.findById(userId).populate({
+        path: 'likedPersons.user',
+        select: 'firstName username preferences role bio',
+      });
 
       if (user) {
+        const likedPersons = user.likedPersons.map((likedPerson) => likedPerson.user);
+
         res.status(200).json({
           success: true,
           response: {
-            likedPersons: user.likedPersons.map((likedPerson) => likedPerson),
+            likedPersons: likedPersons,
             firstName: user.firstName,
             username: user.username,
             preferences: user.preferences,
@@ -397,14 +404,7 @@ app.get('/likedPersons/:userId', async (req, res) => {
   }
 });
 
-
-
-
-//current User to be able to like another user that updates the current users 
-//likedPerssons array with that new likedperson - PATCH - update single user by id
-
-//User to be able to like another user - PATCH - update single user by id
-
+// User to be able to like another user - PATCH - update single user by id
 app.patch('/likedPersons/:userId', async (req, res) => {
   const { likedUserId } = req.body; // User we want to like (use req.body in the frontend)
   const { userId } = req.params; // Extract the userId from the URL parameters
@@ -416,25 +416,25 @@ app.patch('/likedPersons/:userId', async (req, res) => {
 
       if (userToUpdate && likedUser) {
         const likedIndex = likedUser.likedPersons.findIndex(
-          (likedPerson) => likedPerson.id === userId
+          (likedPerson) => likedPerson.user.toString() === userId
         );
         const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
-          (likedPerson) => likedPerson.id === likedUserId
+          (likedPerson) => likedPerson.user.toString() === likedUserId
         );
         const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
 
         userToUpdate.likedPersons.push({
-          id: likedUserId,
+          user: likedUserId,
           isMatched: shouldMatch,
         });
 
         if (shouldMatch) {
           userToUpdate.matchedPersons.push({
-            id: likedUserId,
+            user: likedUserId,
             isMatched: true,
           });
           likedUser.matchedPersons.push({
-            id: userId,
+            user: userId,
             isMatched: true,
           });
         }
@@ -454,7 +454,6 @@ app.patch('/likedPersons/:userId', async (req, res) => {
     res.status(404).json({ error: 'User not found' });
   }
 });
-
 
 
 //Disliked persons -to be able to NOT CHOOSE A PERSON
