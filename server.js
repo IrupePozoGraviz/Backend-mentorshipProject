@@ -314,6 +314,30 @@ app.delete("/user/:userId", async (req, res) => {
   }
 });
 
+// get all users
+app.get("/users", async (req, res) => {
+  try {
+    const users = await User.find();
+    if (users) {
+      res.status(200).json({
+        success: true,
+        response: users
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        response: "No users found"
+      });
+    }
+  } catch (e) {
+    res.status(500).json({
+      success: false,
+      response: e
+    });
+  }
+});
+
+
 // users - GET - get a list of users - 
 //here if you are a mentor you get a list of mentees if 
 //you are a mentee you get a list of mentors, 
