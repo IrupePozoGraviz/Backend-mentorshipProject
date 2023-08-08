@@ -161,11 +161,15 @@ app.post("/register", async (req, res) => {
     res.status(400).json({ success: false, message: "Username must be between 2 and 30 characters" });
     return;
   }
+  // Check if username already exists
+  const existingUser = await User.findOne({ username: username });
+  if (existingUser) {
+    return res.status(400).json({ success: false, message: "Username already exists" });
+  }
 
-  if (User.findOne({ username: username })) {
-  res.status(400).json({ success: false, message: "Username already exists" });
-  return;
- }
+  if (password.length < 6 || password.length > 20) {
+    return res.status(400).json({ success: false, message: "Password must be between 6 and 20 characters" });
+  }
 
 
   if (password.length < 6 || password.length > 20) {
