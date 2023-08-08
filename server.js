@@ -341,7 +341,7 @@ app.get("/users", async (req, res) => {
 // users - GET - get a list of users - 
 //here if you are a mentor you get a list of mentees if 
 //you are a mentee you get a list of mentors, 
-//additionally if you want to expand on that you can show only the users with matching preferences
+
 app.get('/users/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
@@ -382,7 +382,7 @@ app.get('/users/:userId', async (req, res) => {
 });
 
 // Show current users liked persons (mentors or mentees)
-// Show current user's liked persons (mentors or mentees)
+
 app.get('/likedPersons/:userId', async (req, res) => {
   const { userId } = req.params; // Extract the userId from the URL parameters
   
@@ -429,6 +429,7 @@ app.get('/likedPersons/:userId', async (req, res) => {
 });
 
 // User to be able to like another user - PATCH - update single user by id
+
 app.patch('/likedPersons/:userId', async (req, res) => {
   const { likedUserId } = req.body; // User we want to like (use req.body in the frontend)
   const { userId } = req.params; // Extract the userId from the URL parameters
@@ -528,61 +529,6 @@ app.get('/matchedPersons/:userId', async (req, res) => {
     res.status(500).json({ error: 'Something went wrong' });
   }
 });
-
-
-// add a GET request to match a mentor with a mentee and vice versa
-// this one is not used for now
-app.get("/match", async (req, res) => {
-  try {
-    const mentors = await User.find({ role: "mentor" }).populate("preferences");
-    const mentees = await User.find({ role: "mentee" }).populate("preferences");
-    const matchedPairs = matchMentorsWithMentees(mentors, mentees);
-    res.status(200).json({
-      success: true,
-      response: {
-        matchedPairs: matchedPairs,
-      },
-    });
-  } catch (e) {
-    res.status(500).json({
-      success: false,
-      response: e,
-    });
-  }
-});
-
-// Matching Logic - not used for now
-const matchMentorsWithMentees = (mentors, mentees) => {
-  const matchedPairs = [];
-
-  for (const mentor of mentors) {
-    let bestMatch = null;
-    let maxMatchScore = -Infinity;
-
-    for (const mentee of mentees) {
-      const matchScore = calculateMatchScore(mentor.preferences, mentee.preferences);
-
-      if (matchScore > maxMatchScore) {
-        bestMatch = mentee;
-        maxMatchScore = matchScore;
-      }
-    }
-
-    if (bestMatch) {
-      matchedPairs.push({ mentor, mentee: bestMatch });
-      mentees.splice(mentees.indexOf(bestMatch), 1);
-    }
-  }
-
-  return matchedPairs;
-};
-
-const calculateMatchScore = (mentorPreferences, menteePreferences) => {
-  const sharedPreferences = mentorPreferences.filter(p => menteePreferences.includes(p));
-  return sharedPreferences.length;
-};
-
-
 
 
 //  preferences - GET - get all preferences
