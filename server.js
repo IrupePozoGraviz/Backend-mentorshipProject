@@ -157,11 +157,22 @@ app.post("/register", async (req, res) => {
     res.status(400).json({ message: "Please enter a valid email address" });
     return;
   }
+  if (username.length < 2 || username.length > 30) {
+    res.status(400).json({ success: false, message: "Username must be between 2 and 30 characters" });
+    return;
+  }
+
+  if (User.findOne({ username: username })) {
+  res.status(400).json({ success: false, message: "Username already exists" });
+  return;
+ }
+
 
   if (password.length < 6 || password.length > 20) {
     res.status(400).json({ success: false, message: "Password must be between 6 and 20 characters" });
     return;
   }
+
 
   try {
     const salt = bcrypt.genSaltSync();
