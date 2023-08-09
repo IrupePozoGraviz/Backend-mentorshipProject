@@ -167,6 +167,13 @@ app.post("/register", async (req, res) => {
     return res.status(400).json({ success: false, message: "Username already exists" });
   }
 
+  //check if email already exists
+
+  const existingEmail = await User.findOne({ email: email });
+  if (existingEmail) {
+    return res.status(400).json({ success: false, message: "Email already exists" });
+  }
+
   if (password.length < 6 || password.length > 20) {
     return res.status(400).json({ success: false, message: "Password must be between 6 and 20 characters" });
   }
