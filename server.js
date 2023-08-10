@@ -475,6 +475,14 @@ app.patch('/likedPersons/:userId', async (req, res) => {
           isMatched: shouldMatch,
         });
 
+        // added logic to check if the liked user is not already in the likedPersons array
+        if (mutualLikedIndex === -1) {
+          const newLikedPerson = {
+            user: likedUserId,
+            isMatched: shouldMatch,
+          };
+          userToUpdate.likedPersons.push(newLikedPerson);
+        }
         if (shouldMatch) {
           userToUpdate.matchedPersons.push({
             user: likedUserId,
@@ -486,22 +494,22 @@ app.patch('/likedPersons/:userId', async (req, res) => {
           });
         }
 
-        await userToUpdate.save();
-        await likedUser.save();
-
-        res.json(userToUpdate);
-      } else {
-        res.status(404).json({ error: 'User not found' });
+        userToUpdate.matchedPersons.push(newMatchedPersonCurrentUser);
+        likedUser.matchedPersons.push(newMatchedPersonLikedUser);
       }
+
+      await userToUpdate.save();
+      await likedUser.save();
+
+      res.json(userToUpdate);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Something went wrong' });
     }
   } else {
-    res.status(404).json({ error: 'User not found' });
+    res.status(400).json({ error: 'User ID not provided' });
   }
 });
-
 
 //Disliked persons -to be able to NOT CHOOSE A PERSON
 app.patch("/dislikedPersons/:userId", async (req, res) => { 
