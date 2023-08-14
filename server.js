@@ -453,37 +453,44 @@ app.get('/likedPersons/:userId', async (req, res) => {
 // User to be able to like another user - PATCH - update single user by id
 
 app.patch('/likedPersons/:userId', async (req, res) => {
+  console.log('ping')
   const { likedUserId } = req.body; // User we want to like (use req.body in the frontend)
   const { userId } = req.params; // Extract the userId from the URL parameters
-
   if (userId) {
     try {
-      const userToUpdate = await User.findById(userId);
+      const userToUpdate = await User.findById(req.userId);
       const likedUser = await User.findById(likedUserId);
-
+      console.log('userToUpdate', userToUpdate)
+      console.log('likedUser', likedUser)
       if (userToUpdate && likedUser) {
+        console.log('here')
+        //Person A likes person B. When it’s time for person B to like person A,
+        //it goes as follows. Here we check if B is in A’s array, which it is.
         const likedIndex = likedUser.likedPersons.findIndex(
           (likedPerson) => likedPerson.user.toString() === userId
         );
+        //This therefor returns 0.
+        console.log('likedIndex', likedIndex)
+        //Now it’s time to check the opposite, if A is in B’s array.
         const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
           (likedPerson) => likedPerson.user.toString() === likedUserId
         );
+        //This returns -1 because it is not yet added to the liked array.
+        console.log('mutual', mutualLikedIndex)
         const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
-
-        userToUpdate.likedPersons.push({
-          user: likedUserId,
-          isMatched: shouldMatch,
-        });
-
-        // added logic to check if the liked user is not already in the likedPersons array
+        console.log('should', shouldMatch)
+        //The adding to the liked array happens here
+        //To not be able to like one person multiple times,
+        //could we use the mutualLikedIndex? And if it’s not
+        //yet mutual we know that it should be as long as likedIndex is found
+        //right?
         if (mutualLikedIndex === -1) {
-          const newLikedPerson = {
+          userToUpdate.likedPersons.push({
             user: likedUserId,
             isMatched: shouldMatch,
-          };
-          userToUpdate.likedPersons.push(newLikedPerson);
+          });
         }
-        if (shouldMatch) {
+        if (shouldMatch || (likedIndex === 0 && mutualLikedIndex === -1)) {
           userToUpdate.matchedPersons.push({
             user: likedUserId,
             isMatched: true,
@@ -493,23 +500,22 @@ app.patch('/likedPersons/:userId', async (req, res) => {
             isMatched: true,
           });
         }
-
-        userToUpdate.matchedPersons.push(newMatchedPersonCurrentUser);
-        likedUser.matchedPersons.push(newMatchedPersonLikedUser);
+        await userToUpdate.save();
+        await likedUser.save();
+        res.json(userToUpdate);
+      } else {
+        res.status(404).json({ error: 'User not found' });
       }
-
-      await userToUpdate.save();
-      await likedUser.save();
-
-      res.json(userToUpdate);
     } catch (error) {
       console.error(error);
       res.status(500).json({ error: 'Something went wrong' });
     }
   } else {
-    res.status(400).json({ error: 'User ID not provided' });
+    res.status(404).json({ error: 'User not found' });
   }
 });
+
+
 
 //Disliked persons -to be able to NOT CHOOSE A PERSON
 app.patch("/dislikedPersons/:userId", async (req, res) => { 
