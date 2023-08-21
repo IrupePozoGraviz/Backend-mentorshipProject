@@ -457,49 +457,79 @@ app.patch('/likedPersons/:userId', async (req, res) => {
   const { likedUserId } = req.body; // User we want to like (use req.body in the frontend)
   const { userId } = req.params; // Extract the userId from the URL parameters
   if (userId) {
+    console.log('are we here???', userId)
     try {
-      const userToUpdate = await User.findById(req.userId);
+      const userToUpdate = await User.findById(userId);
       const likedUser = await User.findById(likedUserId);
       console.log('userToUpdate', userToUpdate)
       console.log('likedUser', likedUser)
       if (userToUpdate && likedUser) {
         console.log('here')
+
+// check if likedUser is not already in the array 
+// if it is, return nothing
+// if it is not, add it to the array. like this:
+        userToUpdate.likedPersons.push({ user: likedUserId, isMatched: shouldMatch, });
+        likedUser.likedPersons.push({ user: userId, isMatched: shouldMatch, });
+        // check if it works by console logging the userToUpdate and likedUseror by checking the database in Compass using the id:s of the users you are testing with 
+        console.log('userToUpdate', userToUpdate)
+        console.log('likedUser', likedUser)
+
+        
+        
         //Person A likes person B. When it’s time for person B to like person A,
         //it goes as follows. Here we check if B is in A’s array, which it is.
-        const likedIndex = likedUser.likedPersons.findIndex(
-          (likedPerson) => likedPerson.user.toString() === userId
-        );
+        // const likedIndex = likedUser.likedPersons.findIndex(
+        //   (likedPerson) => likedPerson.user.toString() === userId
+        // );
+
+
+        // 1.
+        // Kolla först så att likedUser inte finns i arrayen.
+        // Om den finns i arrayen, gör ingenting - return
+        // Om den inte finns i arrayen, lägg till.
+        // Här vill vi lägga till likedUser i arrayen userToUpdate.likedPersons
+
+
+        // 2. SENARE!
+        // Kolla om det är mutual interest. Isf lägg till i matched persons istället.
+
+
+
+
         //This therefor returns 0.
-        console.log('likedIndex', likedIndex)
-        //Now it’s time to check the opposite, if A is in B’s array.
-        const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
-          (likedPerson) => likedPerson.user.toString() === likedUserId
-        );
+        // console.log('likedIndex', likedIndex)
+        // //Now it’s time to check the opposite, if A is in B’s array.
+        // const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
+        //   (likedPerson) => likedPerson.user.toString() === likedUserId
+        // );
         //This returns -1 because it is not yet added to the liked array.
-        console.log('mutual', mutualLikedIndex)
-        const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
-        console.log('should', shouldMatch)
+        // console.log('mutual', mutualLikedIndex)
+        // const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
+        // console.log('should', shouldMatch)
         //The adding to the liked array happens here
         //To not be able to like one person multiple times,
         //could we use the mutualLikedIndex? And if it’s not
         //yet mutual we know that it should be as long as likedIndex is found
         //right?
-        if (mutualLikedIndex === -1) {
-          userToUpdate.likedPersons.push({
-            user: likedUserId,
-            isMatched: shouldMatch,
-          });
-        }
-        if (shouldMatch || (likedIndex === 0 && mutualLikedIndex === -1)) {
-          userToUpdate.matchedPersons.push({
-            user: likedUserId,
-            isMatched: true,
-          });
-          likedUser.matchedPersons.push({
-            user: userId,
-            isMatched: true,
-          });
-        }
+        // if (mutualLikedIndex === -1) {
+        //   userToUpdate.likedPersons.push({
+        //     user: likedUserId,
+        //     isMatched: shouldMatch,
+        //   });
+        // }
+        // if (shouldMatch || (likedIndex === 0 && mutualLikedIndex === -1)) {
+        //   userToUpdate.matchedPersons.push({
+        //     user: likedUserId,
+        //     isMatched: true,
+        //   });
+        //   likedUser.matchedPersons.push({
+        //     user: userId,
+        //     isMatched: true,
+        //   });
+        // }
+
+
         await userToUpdate.save();
         await likedUser.save();
         res.json(userToUpdate);
