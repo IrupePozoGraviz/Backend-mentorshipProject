@@ -277,7 +277,7 @@ app.get("/user/:userId", async (req, res) => {
 // PATCH - update single user by id
 
 app.patch("/user/:userId", async (req, res) => {
-  const { firstName, lastName, password, email, username, preference } = req.body;
+  const { firstName, lastName, password, email, username, preference  } = req.body;
   try {
 const user = await User.findOneAndUpdate( {_id: req.params.userId}, {
 
@@ -450,32 +450,49 @@ app.get('/likedPersons/:userId', async (req, res) => {
   }
 });
 
-// User to be able to like another user - PATCH - update single user by id
+// PATCH REQUEST TO LIKE A PERSON 
 
 app.patch('/likedPersons/:userId', async (req, res) => {
-  console.log('ping')
-  const { likedUserId } = req.body; // User we want to like (use req.body in the frontend)
-  const { userId } = req.params; // Extract the userId from the URL parameters
-  if (userId) {
-    console.log('are we here???', userId)
-    try {
-      const userToUpdate = await User.findById(userId);
-      const likedUser = await User.findById(likedUserId);
-      console.log('userToUpdate', userToUpdate)
-      console.log('likedUser', likedUser)
-      if (userToUpdate && likedUser) {
-        console.log('here')
+  try {
+    const { likedUserId } = req.body; // likedUserId is the user who is being liked
+    const { userId } = req.params; // userId is the logged-in user who is doing the liking 
 
-// check if likedUser is not already in the array 
-// if it is, return nothing
-// if it is not, add it to the array. like this:
-        userToUpdate.likedPersons.push({ user: likedUserId, isMatched: shouldMatch, });
-        likedUser.likedPersons.push({ user: userId, isMatched: shouldMatch, });
-        // check if it works by console logging the userToUpdate and likedUseror by checking the database in Compass using the id:s of the users you are testing with 
-        console.log('userToUpdate', userToUpdate)
-        console.log('likedUser', likedUser)
+    console.log('Received PATCH request to like user', likedUserId, 'by user', userId);
 
-        
+    const userToUpdate = await User.findById(userId); // this gets the logged-in user and saves it to userToUpdate
+    const likedUser = await User.findById(likedUserId); // this gets the user who is being liked and saves it to likedUser
+
+
+    if (userToUpdate && likedUser) {
+      const likedIndex = likedUser.likedPersons.findIndex(
+        (likedPerson) => likedPerson.user.toString() === userId
+      );
+
+      if (likedIndex === -1) {
+        likedUser.likedPersons.push({ user: userId }); // if the user is not already in the likedPersons array (= has likedIndex -1), add the user to the array
+        await likedUser.save(); // and this is Saving the changes to the likedUser object
+      }
+
+      // Respond with a success message
+      res.status(200).json({ message: 'User liked successfully.' });
+    } else {
+      // Respond with an error message if either user is not found
+      res.status(404).json({ error: 'User not found.' });
+    }
+  } catch (error) {
+    console.error('Error:', error);
+    // Respond with an error message if there's an exception
+    res.status(500).json({ error: 'An error occurred.' });
+  }
+});
+
+
+// 1. UserToUpdate ska kunna gilla en LikedUser
+
+
+// 2. När user to uppdate har gillat en user ska dennaflyttas fråm potential matches till array likedUsers
+
+
         
         //Person A likes person B. When it’s time for person B to like person A,
         //it goes as follows. Here we check if B is in A’s array, which it is.
@@ -484,11 +501,16 @@ app.patch('/likedPersons/:userId', async (req, res) => {
         // );
 
 
+        //1. 
+
+
         // 1.
         // Kolla först så att likedUser inte finns i arrayen.
         // Om den finns i arrayen, gör ingenting - return
         // Om den inte finns i arrayen, lägg till.
         // Här vill vi lägga till likedUser i arrayen userToUpdate.likedPersons
+
+  
 
 
         // 2. SENARE!
@@ -530,20 +552,19 @@ app.patch('/likedPersons/:userId', async (req, res) => {
         // }
 
 
-        await userToUpdate.save();
+        /* await userToUpdate.save();
         await likedUser.save();
         res.json(userToUpdate);
-      } else {
-        res.status(404).json({ error: 'User not found' });
+      } catch (error) {
+        console.error(error);
+        res.status(500).json({ error: 'Something went wrong' });
       }
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ error: 'Something went wrong' });
-    }
+    });
   } else {
-    res.status(404).json({ error: 'User not found' });
-  }
-});
+  res.status(400).json({ error: 'User ID not provided' });
+}
+});*/
+
 
 
 
