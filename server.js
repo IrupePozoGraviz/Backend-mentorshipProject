@@ -470,8 +470,7 @@ console.log("user", userId)
       );
 
       if (likedIndex === -1) {
-        userToUpdate.likedPersons.push({ user: userId }); // if the user is not already in the likedPersons array (= has likedIndex -1), add the user to the array
-        await userToUpdate.save(); // and this is Saving the changes to the likedUser object
+        userToUpdate.likedPersons.push({ user: likedUserId }); // if the user is not already in the likedPersons array (= has likedIndex -1), add the user to the array
       }
 
       const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
