@@ -488,9 +488,10 @@ console.log("user", userId)
         );
         const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
         
-        if(likedIndex === -1){
-          userToUpdate.likedPersons.push({user:likedUserId})
+        if (likedIndex === -1 && likedUserId !== userId) {
+          userToUpdate.likedPersons.push({ user: likedUserId });
         }
+
 
         userToUpdate.likedPersons = userToUpdate.likedPersons.filter(
           (likedPerson) => likedPerson.user.toString() !== likedUserId
