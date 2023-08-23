@@ -450,6 +450,7 @@ app.get('/likedPersons/:userId', async (req, res) => {
   }
 });
 
+
 // PATCH REQUEST TO LIKE A PERSON 
 
 app.patch('/likedPersons/:userId', async (req, res) => {
@@ -464,66 +465,69 @@ console.log("user", userId)
     const likedUser = await User.findById(likedUserId); // this gets the user who is being liked and saves it to likedUser
     console.log("likeduser?", likedUser)
     console.log("userToUpdate?", userToUpdate)
-    if (userToUpdate && likedUser) {
-      // Check if the logged-in user's ID matches the liked user's ID
-      if (userToUpdate._id.toString() !== likedUser._id.toString()) {
-        // Add the liked user to the likedPersons array of the logged-in user
+
+    
+        
+      if (userToUpdate && likedUser) {
+              const likedIndex = userToUpdate.likedPersons.findIndex(
+                (likedPerson) => likedPerson.user.toString() === likedUserId
+              );
+
+        /*if (likedIndex === -1) {
+          userToUpdate.likedPersons.push({ user: likedUserId }); // if the user is not already in the likedPersons array (= has likedIndex -1), add the user to the array
+        }
+  
+        if (likedUserId === userId) {
+          return res.status(400).json({ error: 'You cannot like yourself.' });
+        }*/
+
+        // ändrat i 481 samt raderat ovan
+        
+        const mutualLikedIndex = likedUser.likedPersons.findIndex(
+          (likedPerson) => likedPerson.user.toString() === userId
+        );
+        const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
+        
+        if(likedIndex === -1){
+          userToUpdate.likedPersons.push({user:likedUserId})
+        }
+
+        userToUpdate.likedPersons = userToUpdate.likedPersons.filter(
+          (likedPerson) => likedPerson.user.toString() !== likedUserId
+        )
+
         userToUpdate.likedPersons.push({
           user: likedUserId,
           isMatched: shouldMatch ? true : false,
         });
 
+        if (shouldMatch) {
+          userToUpdate.matchedPersons.push({
+            user: likedUserId,
+            isMatched: true,
+          });
+          likedUser.matchedPersons.push({
+            user: userId,
+            isMatched: true,
+          });
+        }
+
         await userToUpdate.save();
-/*     if (userToUpdate && likedUser) {
-      const likedIndex = userToUpdate.likedPersons.findIndex(
-        (likedPerson) => likedPerson.user.toString() === likedUserId
-      ); */
+        await likedUser.save();
 
-      /*if (likedIndex === -1) {
-        userToUpdate.likedPersons.push({ user: likedUserId }); // if the user is not already in the likedPersons array (= has likedIndex -1), add the user to the array
+        // Respond with a success message
+        res.status(200).json({ message: 'User liked successfully.' });
+      } else {
+        // Respond with an error message if either user is not found
+        res.status(404).json({ error: 'User not found.' });
       }
-
-      if (likedUserId === userId) {
-        return res.status(400).json({ error: 'You cannot like yourself.' });
-      }*/
-
-// ändrat i 481 samt raderat ovan
-      const mutualLikedIndex = likedUser.likedPersons.findIndex(
-        (likedPerson) => likedPerson.user.toString() === userId
-      );
-      const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
-
-      userToUpdate.likedPersons.push({
-        user: likedUserId,
-        isMatched: shouldMatch ? true : false,
-      });
-
-      if (shouldMatch) {
-        userToUpdate.matchedPersons.push({
-          user: likedUserId,
-          isMatched: true,
-        });
-        likedUser.matchedPersons.push({
-          user: userId,
-          isMatched: true,
-        });
-      }
-
-      await userToUpdate.save();
-      await likedUser.save();
-
-      // Respond with a success message
-      res.status(200).json({ message: 'User liked successfully.' });
-    } else {
-      // Respond with an error message if either user is not found
-      res.status(404).json({ error: 'User not found.' });
-    }
+    
   } catch (error) {
-    console.error('Error:', error);
-    // Respond with an error message if there's an exception
-    res.status(500).json({ error: 'An error occurred.' });
+    console.error(error);
+    res.status(500).json({ error: 'Something went wrong' });
   }
 });
+
 
 
 // 1. UserToUpdate ska kunna gilla en LikedUser
