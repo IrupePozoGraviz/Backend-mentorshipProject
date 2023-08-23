@@ -381,14 +381,23 @@ app.get('/users/:userId', async (req, res) => {
     } else {
       filteredUsers = users.filter((user) => user.role === 'mentor');
     }
-    const result = filteredUsers.filter((singleUser) => {
+
+    // Filter out users who have been liked by the current user
+    const potentialMatches = filteredUsers.filter((singleUser) => {
+      const likedIndex = singleUser.likedPersons.findIndex(
+        (likedPerson) => likedPerson.id === userId
+      );
+      return likedIndex === -1;
+    });
+    
+    /*const result = filteredUsers.filter((singleUser) => {
       const likedIndex = singleUser.likedPersons.findIndex(
         (likedPerson) => likedPerson.id === userId
       );
       if (likedIndex === -1) {
         return true;
       }
-    });
+    });*/
     res.status(200).json({
       success: true,
       response: {
