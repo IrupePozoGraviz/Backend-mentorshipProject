@@ -474,6 +474,30 @@ console.log("user", userId)
         await userToUpdate.save(); // and this is Saving the changes to the likedUser object
       }
 
+      const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
+        (likedPerson) => likedPerson.user.toString() === likedUserId
+      );
+      const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
+
+      userToUpdate.likedPersons.push({
+        user: likedUserId,
+        isMatched: shouldMatch,
+      });
+
+      if (shouldMatch) {
+        userToUpdate.matchedPersons.push({
+          user: likedUserId,
+          isMatched: true,
+        });
+        likedUser.matchedPersons.push({
+          user: userId,
+          isMatched: true,
+        });
+      }
+
+      await userToUpdate.save();
+      await likedUser.save();
+
       // Respond with a success message
       res.status(200).json({ message: 'User liked successfully.' });
     } else {
