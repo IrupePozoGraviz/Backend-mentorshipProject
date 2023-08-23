@@ -364,7 +364,7 @@ app.get("/users", async (req, res) => {
 //here if you are a mentor you get a list of mentees if 
 //you are a mentee you get a list of mentors, 
 
-app.get('/users/:userId', async (req, res) => {
+app.get('/potentialMatches/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
     const user = await User.findOne({ _id: req.params.userId });
