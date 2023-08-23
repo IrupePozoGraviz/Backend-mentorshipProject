@@ -463,11 +463,21 @@ console.log("user", userId)
     const userToUpdate = await User.findById(userId); // this gets the logged-in user and saves it to userToUpdate
     const likedUser = await User.findById(likedUserId); // this gets the user who is being liked and saves it to likedUser
     console.log("likeduser?", likedUser)
-
+    console.log("userToUpdate?", userToUpdate)
     if (userToUpdate && likedUser) {
+      // Check if the logged-in user's ID matches the liked user's ID
+      if (userToUpdate._id.toString() !== likedUser._id.toString()) {
+        // Add the liked user to the likedPersons array of the logged-in user
+        userToUpdate.likedPersons.push({
+          user: likedUserId,
+          isMatched: shouldMatch ? true : false,
+        });
+
+        await userToUpdate.save();
+/*     if (userToUpdate && likedUser) {
       const likedIndex = userToUpdate.likedPersons.findIndex(
         (likedPerson) => likedPerson.user.toString() === likedUserId
-      );
+      ); */
 
       /*if (likedIndex === -1) {
         userToUpdate.likedPersons.push({ user: likedUserId }); // if the user is not already in the likedPersons array (= has likedIndex -1), add the user to the array
