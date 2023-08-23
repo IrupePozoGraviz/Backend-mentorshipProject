@@ -389,7 +389,7 @@ app.get('/users/:userId', async (req, res) => {
       );
       return likedIndex === -1;
     });
-    
+
     /*const result = filteredUsers.filter((singleUser) => {
       const likedIndex = singleUser.likedPersons.findIndex(
         (likedPerson) => likedPerson.id === userId
@@ -401,7 +401,7 @@ app.get('/users/:userId', async (req, res) => {
     res.status(200).json({
       success: true,
       response: {
-        users: result,
+        users: potentialMatches,
       },
     });
   } catch (error) {
