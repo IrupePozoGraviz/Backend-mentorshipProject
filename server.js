@@ -469,17 +469,17 @@ console.log("user", userId)
         (likedPerson) => likedPerson.user.toString() === likedUserId
       );
 
-      if (likedIndex === -1) {
+      /*if (likedIndex === -1) {
         userToUpdate.likedPersons.push({ user: likedUserId }); // if the user is not already in the likedPersons array (= has likedIndex -1), add the user to the array
       }
 
       if (likedUserId === userId) {
         return res.status(400).json({ error: 'You cannot like yourself.' });
-      }
+      }*/
 
-
-      const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
-        (likedPerson) => likedPerson.user.toString() === likedUserId
+// ändrat i 481 samt raderat ovan
+      const mutualLikedIndex = likedUser.likedPersons.findIndex(
+        (likedPerson) => likedPerson.user.toString() === userId
       );
       const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
 
