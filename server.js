@@ -457,20 +457,21 @@ app.patch('/likedPersons/:userId', async (req, res) => {
     const { likedUserId } = req.body; // likedUserId is the user who is being liked
     const { userId } = req.params; // userId is the logged-in user who is doing the liking 
 
+console.log("user", userId)
     console.log('Received PATCH request to like user', likedUserId, 'by user', userId);
 
     const userToUpdate = await User.findById(userId); // this gets the logged-in user and saves it to userToUpdate
     const likedUser = await User.findById(likedUserId); // this gets the user who is being liked and saves it to likedUser
-
+    console.log("likeduser?", likedUser)
 
     if (userToUpdate && likedUser) {
-      const likedIndex = likedUser.likedPersons.findIndex(
-        (likedPerson) => likedPerson.user.toString() === userId
+      const likedIndex = userToUpdate.likedPersons.findIndex(
+        (likedPerson) => likedPerson.user.toString() === likedUserId
       );
 
       if (likedIndex === -1) {
-        likedUser.likedPersons.push({ user: userId }); // if the user is not already in the likedPersons array (= has likedIndex -1), add the user to the array
-        await likedUser.save(); // and this is Saving the changes to the likedUser object
+        userToUpdate.likedPersons.push({ user: userId }); // if the user is not already in the likedPersons array (= has likedIndex -1), add the user to the array
+        await userToUpdate.save(); // and this is Saving the changes to the likedUser object
       }
 
       // Respond with a success message
