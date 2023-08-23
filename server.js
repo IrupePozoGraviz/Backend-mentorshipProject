@@ -481,7 +481,7 @@ console.log("user", userId)
 
       userToUpdate.likedPersons.push({
         user: likedUserId,
-        isMatched: shouldMatch,
+        isMatched: shouldMatch ? true : false,
       });
 
       if (shouldMatch) {
