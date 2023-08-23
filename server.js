@@ -473,6 +473,11 @@ console.log("user", userId)
         userToUpdate.likedPersons.push({ user: likedUserId }); // if the user is not already in the likedPersons array (= has likedIndex -1), add the user to the array
       }
 
+      if (likedUserId === userId) {
+        return res.status(400).json({ error: 'You cannot like yourself.' });
+      }
+
+
       const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
         (likedPerson) => likedPerson.user.toString() === likedUserId
       );
