@@ -96,7 +96,6 @@ const UserSchema = new mongoose.Schema({
     type: String,
     enum: ["fullstack", "frontend", "backend", "react", "javascript", "python", "java"]
   }],
-
   role: {
     type: String,
     enum: ["mentor", "mentee"],
@@ -129,6 +128,8 @@ bio: {
       default: false,
     },
   }],
+
+
   bio: {
     type: String,
     default: ''
@@ -153,41 +154,44 @@ const User = mongoose.model("User", UserSchema);
 app.post("/register", async (req, res) => {
   const { username, password, email, lastName, firstName, preferences, role, bio } = req.body;
 
+  console.log("Received request to register user:", req.body);
+
   if (!validator.isEmail(email)) {
+    console.log("Email validation failed for:", email);
     res.status(400).json({ message: "Please enter a valid email address" });
     return;
   }
+
   if (username.length < 2 || username.length > 30) {
+    console.log("Username length validation failed for:", username);
     res.status(400).json({ success: false, message: "Username must be between 2 and 30 characters" });
     return;
   }
-  // Check if username already exists
+
   const existingUser = await User.findOne({ username: username });
   if (existingUser) {
+    console.log("Username already exists:", username);
     return res.status(400).json({ success: false, message: "Username already exists" });
   }
 
-  //check if email already exists
-
   const existingEmail = await User.findOne({ email: email });
   if (existingEmail) {
+    console.log("Email already exists:", email);
     return res.status(400).json({ success: false, message: "Email already exists" });
   }
 
   if (password.length < 6 || password.length > 20) {
-    return res.status(400).json({ success: false, message: "Password must be between 6 and 20 characters" });
-  }
-
-
-  if (password.length < 6 || password.length > 20) {
+    console.log("Password length validation failed for:", password);
     res.status(400).json({ success: false, message: "Password must be between 6 and 20 characters" });
     return;
   }
 
-
   try {
     const salt = bcrypt.genSaltSync();
-    const verificationToken = crypto.randomBytes(16).toString("hex"); // Generate a random verification token
+    const verificationToken = crypto.randomBytes(16).toString("hex");
+
+    console.log("Salt generated:", salt);
+    console.log("Verification token generated:", verificationToken);
 
     const newUser = await new User({
       username: username,
@@ -195,17 +199,20 @@ app.post("/register", async (req, res) => {
       firstName: firstName,
       lastName: lastName,
       password: bcrypt.hashSync(password, salt),
-      verificationToken: verificationToken, // Assign the verification token to the user
+      verificationToken: verificationToken,
       preferences: preferences,
       role: role,
       bio: bio
     }).save();
+
+    console.log("New user saved:", newUser);
 
     res.status(201).json({
       success: true,
       response: newUser
     });
   } catch (e) {
+    console.error("Error creating user:", e);
     res.status(400).json({
       success: false,
       response: e,
@@ -213,6 +220,7 @@ app.post("/register", async (req, res) => {
     });
   }
 });
+
 
 
 
@@ -364,6 +372,10 @@ app.get("/users", async (req, res) => {
 //here if you are a mentor you get a list of mentees if 
 //you are a mentee you get a list of mentors, 
 
+// users - GET - get a list of users - 
+//here if you are a mentor you get a list of mentees if 
+//you are a mentee you get a list of mentors, 
+
 app.get('/potentialMatches/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
@@ -461,48 +473,92 @@ app.get('/likedPersons/:userId', async (req, res) => {
 
 
 // PATCH REQUEST TO LIKE A PERSON 
-
 app.patch('/likedPersons/:userId', async (req, res) => {
   try {
-    const { likedUserId } = req.body; // likedUserId is the user who is being liked
-    const { userId } = req.params; // userId is the logged-in user who is doing the liking 
+    const { likedUserId } = req.body; 
+    const { userId } = req.params;
 
-console.log("user", userId)
-    console.log('Received PATCH request to like user', likedUserId, 'by user', userId);
+    console.log('[PATCH /likedPersons/:userId] Received request to like user', likedUserId, 'by user', userId);
 
-    const userToUpdate = await User.findById(userId); // this gets the logged-in user and saves it to userToUpdate
-    const likedUser = await User.findById(likedUserId); // this gets the user who is being liked and saves it to likedUser
-    console.log("likeduser?", likedUser)
-    console.log("userToUpdate?", userToUpdate)
+    const userToUpdate = await User.findById(userId);
+    const likedUser = await User.findById(likedUserId);
 
+    if (!userToUpdate || !likedUser) {
+      console.error('[PATCH /likedPersons/:userId] One or both users not found.');
+      return res.status(404).json({ error: 'User not found.' });
+    }
+
+    console.log('[PATCH /likedPersons/:userId] userToUpdate likedPersons:', userToUpdate.likedPersons);
+    console.log('[PATCH /likedPersons/:userId] likedUser likedPersons:', likedUser.likedPersons);
+
+    // Check if the likedUser has already liked the userToUpdate
+    const foundMatch = likedUser.likedPersons.some(person => String(person.user) === String(userId));
+
+    console.log('[PATCH /likedPersons/:userId] Match found between users:', foundMatch);
+
+    if (foundMatch) {
+      // If a match is found, add each other to their matchedPersons array
+      userToUpdate.matchedPersons.push(likedUserId);
+      likedUser.matchedPersons.push(userId);
+
+      console.log('[PATCH /likedPersons/:userId] userToUpdate matchedPersons after update:', userToUpdate.matchedPersons);
+      console.log('[PATCH /likedPersons/:userId] likedUser matchedPersons after update:', likedUser.matchedPersons);
+
+      // Remove userToUpdate from likedUser's likedPersons array
+      likedUser.likedPersons = likedUser.likedPersons.filter(person => String(person.user) !== String(userId));
+
+      console.log('[PATCH /likedPersons/:userId] likedUser likedPersons after removing matched user:', likedUser.likedPersons);
+
+      await userToUpdate.save();
+      await likedUser.save();
+
+      return res.status(200).json({ message: 'Match found and saved!' });
+
+    } else {
+      // If there's no match, just save the like
+      userToUpdate.likedPersons.push({ user: likedUserId, isMatched: false });
+
+      console.log('[PATCH /likedPersons/:userId] userToUpdate likedPersons after liking:', userToUpdate.likedPersons);
+
+      await userToUpdate.save();
+
+      return res.status(200).json({ message: 'User liked successfully, but no match yet.' });
+    }
     
-        
-      if (userToUpdate && likedUser) {
-              const likedIndex = userToUpdate.likedPersons.findIndex(
-                (likedPerson) => likedPerson.user.toString() === likedUserId
-              );
-
-        
-        const mutualLikedIndex = likedUser.likedPersons.findIndex(
-          (likedPerson) => likedPerson.user.toString() === userId
-        );
-        const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
-        
-        if (likedIndex === -1 && likedUserId !== userId) {
-          userToUpdate.likedPersons.push({ user: likedUserId });
-        }
+  } catch (error) {
+    console.error('[PATCH /likedPersons/:userId] Error:', error.message);
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
 
 
-        userToUpdate.likedPersons = userToUpdate.likedPersons.filter(
-          (likedPerson) => likedPerson.user.toString() !== likedUserId
-        )
 
-        userToUpdate.likedPersons.push({
-          user: likedUserId,
-          isMatched: shouldMatch ? true : false,
-        });
 
-        if (shouldMatch) {
+/*1. if user to uppdate (Annika)likes a person then the code has to look if likedpersons(Irro)has 
+allready liked here as well if yes they match
+(find if user to uppdate exists as liked in liked persons array if yes then match) */
+
+/*2. men om irro inte hunnit gilla tillbaka så läggs Irro in i annikas gilla lista
+if userId (loged in user/user to uppdate) doesnt exist in liked.user.likedperson array 
+then we add likedUser to the userto uppdate*/
+
+/* 3. if likeduser and userTouppdate has liked eachother, we need to remove 
+            userTouppdate form likedusers liked array and add echother to match array
+            */
+
+      
+       
+
+//yoy want to add one item to the array the others profile (meaning add annikas profile to irinas)
+//this is where we just add the likedUser to user to uppdate likedPersons Array (not matching)
+        /* userToUpdate.likedPersons.push({ */
+          //add more data, user user.id or what it needs to add the full data
+      /*     user: likedUserId, */
+          // isMatched: shouldMatch ? true : false,
+       // });
+// if user to uppdate allready was in liked user array then we do the match 
+// 
+       /*  if (shouldMatch) {
           userToUpdate.matchedPersons.push({
             user: likedUserId,
             isMatched: true,
@@ -512,7 +568,8 @@ console.log("user", userId)
             isMatched: true,
           });
         }
-
+// new action here is when we do the match we need to remove 
+//usertouppdate from liked user likedpersons array sp thet usertouppdate ends up in matchedpersons array
         await userToUpdate.save();
         await likedUser.save();
 
@@ -528,87 +585,34 @@ console.log("user", userId)
     res.status(500).json({ error: 'Something went wrong' });
   }
 });
+ */
 
+//Disliked persons -to be able to NOT CHOOSE A PERSON
+app.patch("/dislikedPersons/:userId", async (req, res) => { 
+  const {dislikedUserId} = req.body 
 
+  console.log('dislikedUserId', dislikedUserId) 
+  const loggedInUserId = req.userId; 
+  const { userId } = req.params; // Extract the userId from the URL parameters
+  console.log('loggedInUserId', loggedInUserId) 
+  console.log('userId params', userId) 
 
-// 1. UserToUpdate ska kunna gilla en LikedUser
+  try {
 
+    const userToUpdate = await User.findById(loggedInUserId); // Find the logged-in user by their ID
 
-// 2. När user to uppdate har gillat en user ska dennaflyttas fråm potential matches till array likedUsers
+    // when disliking a person we want to remove that person from the likedPersons array
+    
 
+    // Save the updated user with the new dislikedPersons array
+    const updatedUser = await userToUpdate.save();
 
-        
-        //Person A likes person B. When it’s time for person B to like person A,
-        //it goes as follows. Here we check if B is in A’s array, which it is.
-        // const likedIndex = likedUser.likedPersons.findIndex(
-        //   (likedPerson) => likedPerson.user.toString() === userId
-        // );
-
-
-        //1. 
-
-
-        // 1.
-        // Kolla först så att likedUser inte finns i arrayen.
-        // Om den finns i arrayen, gör ingenting - return
-        // Om den inte finns i arrayen, lägg till.
-        // Här vill vi lägga till likedUser i arrayen userToUpdate.likedPersons
-
-  
-
-
-        // 2. SENARE!
-        // Kolla om det är mutual interest. Isf lägg till i matched persons istället.
-
-
-
-
-        //This therefor returns 0.
-        // console.log('likedIndex', likedIndex)
-        // //Now it’s time to check the opposite, if A is in B’s array.
-        // const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
-        //   (likedPerson) => likedPerson.user.toString() === likedUserId
-        // );
-        //This returns -1 because it is not yet added to the liked array.
-        // console.log('mutual', mutualLikedIndex)
-        // const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
-        // console.log('should', shouldMatch)
-        //The adding to the liked array happens here
-        //To not be able to like one person multiple times,
-        //could we use the mutualLikedIndex? And if it’s not
-        //yet mutual we know that it should be as long as likedIndex is found
-        //right?
-        // if (mutualLikedIndex === -1) {
-        //   userToUpdate.likedPersons.push({
-        //     user: likedUserId,
-        //     isMatched: shouldMatch,
-        //   });
-        // }
-        // if (shouldMatch || (likedIndex === 0 && mutualLikedIndex === -1)) {
-        //   userToUpdate.matchedPersons.push({
-        //     user: likedUserId,
-        //     isMatched: true,
-        //   });
-        //   likedUser.matchedPersons.push({
-        //     user: userId,
-        //     isMatched: true,
-        //   });
-        // }
-
-
-        /* await userToUpdate.save();
-        await likedUser.save();
-        res.json(userToUpdate);
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Something went wrong' });
-      }
-    });
-  } else {
-  res.status(400).json({ error: 'User ID not provided' });
-}
-});*/
-
+    res.json(updatedUser); // Return the updated user as the response
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ error: "Something went wrong" });
+  }
+});
 
 
 
