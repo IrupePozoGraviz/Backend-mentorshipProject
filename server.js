@@ -4,8 +4,6 @@ import mongoose from "mongoose";
 import crypto from "crypto";
 import bcrypt from "bcrypt";
 import validator from 'validator';
-
-import multer from 'multer';
 import listEndpoints from "express-list-endpoints";
 import dotenv from 'dotenv';
 dotenv.config();
@@ -33,29 +31,7 @@ mongoose.Promise = Promise;
 // Defines the port the app will run on. Defaults to 8080, but can be overridden
 
 const port = process.env.PORT || 8080;
-
-
-// Socket.io logic here not used yet
 const http = require('http').createServer(app);
-//http.createServer(app)
-// const Server = http.createServer(app);
-const io = require('socket.io')(http);
-
-io.on('connection', (socket) => {
-  console.log('A user connected');
-
-  // Handle events from the client
-  socket.on('chat message', (message) => {
-    console.log('Received message:', message);
-    // Broadcast the message to all connected clients
-    io.emit('chat message', message);
-  });
-
-  // Handle disconnections
-  socket.on('disconnect', () => {
-    console.log('A user disconnected');
-  });
-});
 
 
 app.get("/", (req, res) => {
@@ -128,12 +104,6 @@ bio: {
       default: false,
     },
   }],
-
-
-  bio: {
-    type: String,
-    default: ''
-  },
   profilePicture: {
     type: String,
     default: ''
@@ -154,34 +124,27 @@ const User = mongoose.model("User", UserSchema);
 app.post("/register", async (req, res) => {
   const { username, password, email, lastName, firstName, preferences, role, bio } = req.body;
 
-  console.log("Received request to register user:", req.body);
-
   if (!validator.isEmail(email)) {
-    console.log("Email validation failed for:", email);
     res.status(400).json({ message: "Please enter a valid email address" });
     return;
   }
 
   if (username.length < 2 || username.length > 30) {
-    console.log("Username length validation failed for:", username);
     res.status(400).json({ success: false, message: "Username must be between 2 and 30 characters" });
     return;
   }
 
   const existingUser = await User.findOne({ username: username });
   if (existingUser) {
-    console.log("Username already exists:", username);
     return res.status(400).json({ success: false, message: "Username already exists" });
   }
 
   const existingEmail = await User.findOne({ email: email });
   if (existingEmail) {
-    console.log("Email already exists:", email);
     return res.status(400).json({ success: false, message: "Email already exists" });
   }
 
   if (password.length < 6 || password.length > 20) {
-    console.log("Password length validation failed for:", password);
     res.status(400).json({ success: false, message: "Password must be between 6 and 20 characters" });
     return;
   }
@@ -189,9 +152,6 @@ app.post("/register", async (req, res) => {
   try {
     const salt = bcrypt.genSaltSync();
     const verificationToken = crypto.randomBytes(16).toString("hex");
-
-    console.log("Salt generated:", salt);
-    console.log("Verification token generated:", verificationToken);
 
     const newUser = await new User({
       username: username,
@@ -204,8 +164,6 @@ app.post("/register", async (req, res) => {
       role: role,
       bio: bio
     }).save();
-
-    console.log("New user saved:", newUser);
 
     res.status(201).json({
       success: true,
@@ -220,8 +178,6 @@ app.post("/register", async (req, res) => {
     });
   }
 });
-
-
 
 
 //LOGIN
@@ -248,7 +204,7 @@ app.post("/login", async (req, res) => {
   }
 });
 
-// Get a single user by id
+// Get single user by id
 app.get("/user/:userId", async (req, res) => {
 
   try {
@@ -281,8 +237,7 @@ app.get("/user/:userId", async (req, res) => {
 });
 
 
-
-// PATCH - update single user by id
+// Endpoint that enables user to update its own profile (not in use yet, but will be in nearest future)
 
 app.patch("/user/:userId", async (req, res) => {
   const { firstName, lastName, password, email, username, preference  } = req.body;
@@ -316,6 +271,7 @@ res.status(500).json({
 }
 });
 
+// Endpoint that enables user to delete its own profile (not in use yet, but will be in nearest future)
 
 app.delete("/user/:userId", async (req, res) => {
   try {
@@ -344,7 +300,7 @@ app.delete("/user/:userId", async (req, res) => {
   }
 });
 
-// get all users
+// endpoint used by the developers and used for administrating reasons only
 app.get("/users", async (req, res) => {
   try {
     const users = await User.find();
@@ -368,13 +324,7 @@ app.get("/users", async (req, res) => {
 });
 
 
-// users - GET - get a list of users - 
-//here if you are a mentor you get a list of mentees if 
-//you are a mentee you get a list of mentors, 
-
-// users - GET - get a list of users - 
-//here if you are a mentor you get a list of mentees if 
-//you are a mentee you get a list of mentors, 
+// Endpoint filters the mentees and mentors. Mentors see a list of mentees and vice versa.
 
 app.get('/potentialMatches/:userId', async (req, res) => {
   const { userId } = req.params;
@@ -394,7 +344,6 @@ app.get('/potentialMatches/:userId', async (req, res) => {
       filteredUsers = users.filter((user) => user.role === 'mentor');
     }
 
-    // Filter out users who have been liked by the current user
     const potentialMatches = filteredUsers.filter((singleUser) => {
       const likedIndex = singleUser.likedPersons.findIndex(
         (likedPerson) => likedPerson.id === userId
@@ -402,14 +351,6 @@ app.get('/potentialMatches/:userId', async (req, res) => {
       return likedIndex === -1;
     });
 
-    /*const result = filteredUsers.filter((singleUser) => {
-      const likedIndex = singleUser.likedPersons.findIndex(
-        (likedPerson) => likedPerson.id === userId
-      );
-      if (likedIndex === -1) {
-        return true;
-      }
-    });*/
     res.status(200).json({
       success: true,
       response: {
@@ -424,10 +365,10 @@ app.get('/potentialMatches/:userId', async (req, res) => {
   }
 });
 
-// Show current users liked persons (mentors or mentees)
+// Endpoint show current users liked persons (mentors or mentees)
 
 app.get('/likedPersons/:userId', async (req, res) => {
-  const { userId } = req.params; // Extract the userId from the URL parameters
+  const { userId } = req.params;
   
   if (userId) {
     try {
@@ -472,7 +413,23 @@ app.get('/likedPersons/:userId', async (req, res) => {
 });
 
 
-// PATCH REQUEST TO LIKE A PERSON 
+// Ursäkta röran vi bygger om / Excuse the mess, we're working on the new Endpoint  PATCH REQUEST TO LIKE A PERSON 
+
+
+/*1. if user to uppdate (Annika)likes a person then the code has to look if likedpersons(Irro)has
+allready liked here as well if yes they match
+(find if user to uppdate exists as liked in liked persons array if yes then match) */
+
+
+/*2. men om irro inte hunnit gilla tillbaka så läggs Irro in i annikas gilla lista
+if userId (loged in user/user to uppdate) doesnt exist in liked.user.likedperson array
+then we add likedUser to the userto uppdate*/
+
+
+/* 3. if likeduser and userTouppdate has liked eachother, we need to remove
+userTouppdate form likedusers liked array and add echother to match array
+*/
+
 app.patch('/likedPersons/:userId', async (req, res) => {
   try {
     const { likedUserId } = req.body; 
@@ -532,62 +489,7 @@ app.patch('/likedPersons/:userId', async (req, res) => {
 });
 
 
-
-
-/*1. if user to uppdate (Annika)likes a person then the code has to look if likedpersons(Irro)has 
-allready liked here as well if yes they match
-(find if user to uppdate exists as liked in liked persons array if yes then match) */
-
-/*2. men om irro inte hunnit gilla tillbaka så läggs Irro in i annikas gilla lista
-if userId (loged in user/user to uppdate) doesnt exist in liked.user.likedperson array 
-then we add likedUser to the userto uppdate*/
-
-/* 3. if likeduser and userTouppdate has liked eachother, we need to remove 
-            userTouppdate form likedusers liked array and add echother to match array
-            */
-
-      
-       
-
-//yoy want to add one item to the array the others profile (meaning add annikas profile to irinas)
-//this is where we just add the likedUser to user to uppdate likedPersons Array (not matching)
-        /* userToUpdate.likedPersons.push({ */
-          //add more data, user user.id or what it needs to add the full data
-      /*     user: likedUserId, */
-          // isMatched: shouldMatch ? true : false,
-       // });
-// if user to uppdate allready was in liked user array then we do the match 
-// 
-       /*  if (shouldMatch) {
-          userToUpdate.matchedPersons.push({
-            user: likedUserId,
-            isMatched: true,
-          });
-          likedUser.matchedPersons.push({
-            user: userId,
-            isMatched: true,
-          });
-        }
-// new action here is when we do the match we need to remove 
-//usertouppdate from liked user likedpersons array sp thet usertouppdate ends up in matchedpersons array
-        await userToUpdate.save();
-        await likedUser.save();
-
-        // Respond with a success message
-        res.status(200).json({ message: 'User liked successfully.' });
-      } else {
-        // Respond with an error message if either user is not found
-        res.status(404).json({ error: 'User not found.' });
-      }
-    
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: 'Something went wrong' });
-  }
-});
- */
-
-//Disliked persons -to be able to NOT CHOOSE A PERSON
+//Endpoint that enables user to dislike another profile (not in use yet, but will be in nearest future)
 app.patch("/dislikedPersons/:userId", async (req, res) => { 
   const {dislikedUserId} = req.body 
 
@@ -600,10 +502,7 @@ app.patch("/dislikedPersons/:userId", async (req, res) => {
   try {
 
     const userToUpdate = await User.findById(loggedInUserId); // Find the logged-in user by their ID
-
     // when disliking a person we want to remove that person from the likedPersons array
-    
-
     // Save the updated user with the new dislikedPersons array
     const updatedUser = await userToUpdate.save();
 
@@ -614,35 +513,7 @@ app.patch("/dislikedPersons/:userId", async (req, res) => {
   }
 });
 
-
-
-//Disliked persons -to be able to NOT CHOOSE A PERSON
-app.patch("/dislikedPersons/:userId", async (req, res) => { 
-  const {dislikedUserId} = req.body 
-
-  console.log('dislikedUserId', dislikedUserId) 
-  const loggedInUserId = req.userId; 
-  const { userId } = req.params; // Extract the userId from the URL parameters
-  console.log('loggedInUserId', loggedInUserId) 
-  console.log('userId params', userId) 
-
-  try {
-
-    const userToUpdate = await User.findById(loggedInUserId); // Find the logged-in user by their ID
-
-    // when disliking a person we want to remove that person from the likedPersons array
-    
-
-    // Save the updated user with the new dislikedPersons array
-    const updatedUser = await userToUpdate.save();
-
-    res.json(updatedUser); // Return the updated user as the response
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Something went wrong" });
-  }
-});
-/*--------------------current user to be able to see their matched persons------------------------*/
+//Endpoint current user to be able to see their matched persons
 app.get('/matchedPersons/:userId', async (req, res) => {
   const { userId } = req.params; // Extract the userId from the URL parameters
 
@@ -664,102 +535,6 @@ app.get('/matchedPersons/:userId', async (req, res) => {
     res.status(500).json({ error: 'Something went wrong' });
   }
 });
-
-
-//  preferences - GET - get all preferences
-app.get('/preferences', async (req, res) => {
-  try {
-    const users = await User.find();
-    const preferences = users.map(user => user.preference);
-    const uniquePreferences = [...new Set(preferences)];
-
-    res.status(200).json({
-      success: true,
-      response: {
-        preferences: uniquePreferences,
-      }
-    });
-  } catch (e) {
-    res.status(500).json({
-      success: false,
-      response: e
-    });
-  }
-});
-
-
-// for profile picture upload
-/*We dont have a storage for it yet*/
-
-const upload = multer({
-  storage: multer.memoryStorage()
-});
-
-
-// Endpoint for uploading a profile picture
-// Middleware for serving uploaded files
-app.use('/uploads', express.static('uploads'));
-
-// Endpoint for uploading a profile picture
-app.post('/user/:userId/upload-profile-picture', upload.single('profilePicture'), async (req, res) => {
-  const userId = req.params.userId;
-  const profilePicture = req.file;
-
-  if (!profilePicture) {
-    return res.status(400).json({ error: 'No file provided' });
-  }
-
-  try {
-    const result = await cloudinary.uploader.upload(profilePicture.path, {
-      folder: 'profile-pictures',
-      public_id: `user-${userId}`,
-      overwrite: true
-    });
-
-    await User.findOneAndUpdate(
-      { _id: userId },
-      { profilePicture: result.secure_url }
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Profile picture uploaded successfully',
-      file: profilePicture
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to upload profile picture',
-      error: error.message
-    });
-  }
-});
-
-// Endpoint for deleting a profile picture
-app.delete('/user/:userId/delete-profile-picture', async (req, res) => {
-  const userId = req.params.userId;
-
-  // Update the user's profile picture in the database
-  try {
-    await User.findOneAndUpdate(
-      { _id: userId },
-      { profilePicture: null }
-    );
-
-    res.status(200).json({
-      success: true,
-      message: 'Profile picture deleted successfully'
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: 'Failed to delete profile picture',
-      error: error.message
-    });
-  }
-});
-
 
 // start the server
 
