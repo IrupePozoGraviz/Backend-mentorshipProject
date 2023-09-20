@@ -110,7 +110,7 @@ bio: {
 
   likedPersons: [{
     user: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId, // this is the id of the user who is being liked 
       ref: 'User',
     },
     isMatched: {
@@ -121,7 +121,7 @@ bio: {
   
   matchedPersons: [{
     user: {
-      type: mongoose.Schema.Types.ObjectId,
+      type: mongoose.Schema.Types.ObjectId, // this is the id of the user who is being liked
       ref: 'User',
     },
     isMatched: {
@@ -450,40 +450,40 @@ app.get('/likedPersons/:userId', async (req, res) => {
 
 app.patch('/like/:userId', async (req, res) => {
   try {
-    const { userId } = req.params;
-    const likedProfileId = req.body.likedUserId;
+    const { userId } = req.params; // Extract the userId from the URL parameters
+    const likedProfileId = req.body.likedUserId; // Extract the likedUserId from the request body
 
-    const userWhoLiked = await User.findById(userId);
-    const profileToLike = await User.findById(likedProfileId);
+    const userWhoLiked = await User.findById(userId); // Find the user who initiated the like
+    const profileToLike = await User.findById(likedProfileId); // Find the profile to like
 
-    if (!userWhoLiked || !profileToLike) {
-      return res.status(404).json({ error: 'User not found' });
+    if (!userWhoLiked || !profileToLike) { // If either user is not found 
+      return res.status(404).json({ error: 'User not found' }); // Respond with an error message
     }
 
     // If the user who initiated the like already like the profile to like
-    const alreadyLiked = userWhoLiked.likedPersons.findIndex(
-      (likedPerson) => likedPerson.user.toString() === likedProfileId
+    const alreadyLiked = userWhoLiked.likedPersons.findIndex( // Find the index of the profile to like in the user who initiated the like's likedPersons array and defines it as alreadyLiked 
+      (likedPerson) => likedPerson.user.toString() === likedProfileId // If the user who initiated the like already like the profile to like 
     )
-    if (alreadyLiked !== -1) {
+    if (alreadyLiked !== -1) { // If the user who initiated the like already like the profile to like
       return res.status(400).json({ error: 'User has been already liked' });
     }
 
-    // First check if user who initiated the like was already liked by 'the profile to like'
-    const userWasLiked = profileToLike.likedPersons.findIndex(
-      (likedPerson) => likedPerson.user?.toString() === userId
+    // irina: First check if user who initiated the like was already liked by 'the profile to like'
+    const userWasLiked = profileToLike.likedPersons.findIndex( // Find the index of the user who initiated the like in the profile to like's likedPersons array and defines it as userWasLiked
+      (likedPerson) => likedPerson.user?.toString() === userId // If the user who initiated the like was already liked by the 'profile to like'
     )
-    // User who initiated the like was already liked by the 'profile to like'
-    if (userWasLiked !== -1) {
+    // irina: User who initiated the like was already liked by the 'profile to like'
+    if (userWasLiked !== -1) { // If the user who initiated the like was already liked by the 'profile to like' then we have a match
       // Match both users
-      userWhoLiked.matchedPersons.push({ user: likedProfileId }); // you need to specify the user object
-      profileToLike.matchedPersons.push({ user: userId }); // add userId not a user object
+      userWhoLiked.matchedPersons.push({ user: likedProfileId }); // irina: you need to specify the user object
+      profileToLike.matchedPersons.push({ user: userId }); // irina: add userId not a user object
 
-      // Remove the user who initiated the like from the profile to like's likedPersons array
+      // irina: Remove the user who initiated the like from the profile to like's likedPersons array
       profileToLike.likedPersons = profileToLike.likedPersons.filter(
         (likedPerson) => likedPerson.user.toString() !== userId
       );
     }
-    // User who initiated the like has not been liked by the profile to like
+    // irina: User who initiated the like has not been liked by the profile to like
     else {
       userWhoLiked.likedPersons.push({ user: likedProfileId });
     }
@@ -491,7 +491,7 @@ app.patch('/like/:userId', async (req, res) => {
     await userWhoLiked.save();
     await profileToLike.save();
 
-    // Respond with a success message
+    // irina: Respond with a success message
     res.status(200).json({ message: 'User liked successfully.' });
   } catch {
     res.status(500).json({ error: 'Something went wrong' });
