@@ -367,41 +367,29 @@ app.get("/users", async (req, res) => {
 app.get('/potentialMatches/:userId', async (req, res) => {
   const { userId } = req.params;
   try {
-    const user = await User.findOne({ _id: req.params.userId });
-    if (!user) {
+    const loggedUser = await User.findOne({ _id: req.params.userId });
+    if (!loggedUser) {
       return res.status(400).json({
         success: false,
         response: 'User not found',
       });
     }
     const users = await User.find();
-    let filteredUsers;
-    if (user.role === 'mentor') {
-      filteredUsers = users.filter((user) => user.role === 'mentee');
-    } else {
-      filteredUsers = users.filter((user) => user.role === 'mentor');
-    }
 
-    // Filter out users who have been liked by the current user
-    const potentialMatches = filteredUsers.filter((singleUser) => {
-      const likedIndex = singleUser.likedPersons.findIndex(
-        (likedPerson) => likedPerson.id === userId
-      );
-      return likedIndex === -1;
-    });
+    const filteredUsers = users.filter((user) => {
+      // Don't show users who have already been liked by the logged-in user
+      const likedIndex = loggedUser.likedPersons.findIndex((u) => u.user.toString() === user._id.toString());
+      // Don't show users who have already been matched with the logged-in user
+      const matchedIndex = loggedUser.matchedPersons.findIndex((u) => u.user.toString() === user._id.toString());
+      // Filter out the logged-in user and users who has the same role as the current logged-in user
+      return (user._id.toString() !== userId && user.role !== loggedUser.role && likedIndex === -1 && matchedIndex === -1);
 
-    /*const result = filteredUsers.filter((singleUser) => {
-      const likedIndex = singleUser.likedPersons.findIndex(
-        (likedPerson) => likedPerson.id === userId
-      );
-      if (likedIndex === -1) {
-        return true;
-      }
-    });*/
+    })
+
     res.status(200).json({
       success: true,
       response: {
-        users: potentialMatches,
+        users: filteredUsers,
       },
     });
   } catch (error) {
@@ -459,6 +447,56 @@ app.get('/likedPersons/:userId', async (req, res) => {
   }
 });
 
+
+app.patch('/like/:userId', async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const likedProfileId = req.body.likedUserId;
+
+    const userWhoLiked = await User.findById(userId);
+    const profileToLike = await User.findById(likedProfileId);
+
+    if (!userWhoLiked || !profileToLike) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // If the user who initiated the like already like the profile to like
+    const alreadyLiked = userWhoLiked.likedPersons.findIndex(
+      (likedPerson) => likedPerson.user.toString() === likedProfileId
+    )
+    if (alreadyLiked !== -1) {
+      return res.status(400).json({ error: 'User has been already liked' });
+    }
+
+    // First check if user who initiated the like was already liked by 'the profile to like'
+    const userWasLiked = profileToLike.likedPersons.findIndex(
+      (likedPerson) => likedPerson.user?.toString() === userId
+    )
+    // User who initiated the like was already liked by the 'profile to like'
+    if (userWasLiked !== -1) {
+      // Match both users
+      userWhoLiked.matchedPersons.push({ user: likedProfileId }); // you need to specify the user object
+      profileToLike.matchedPersons.push({ user: userId }); // add userId not a user object
+
+      // Remove the user who initiated the like from the profile to like's likedPersons array
+      profileToLike.likedPersons = profileToLike.likedPersons.filter(
+        (likedPerson) => likedPerson.user.toString() !== userId
+      );
+    }
+    // User who initiated the like has not been liked by the profile to like
+    else {
+      userWhoLiked.likedPersons.push({ user: likedProfileId });
+    }
+
+    await userWhoLiked.save();
+    await profileToLike.save();
+
+    // Respond with a success message
+    res.status(200).json({ message: 'User liked successfully.' });
+  } catch {
+    res.status(500).json({ error: 'Something went wrong' });
+  }
+});
 
 // PATCH REQUEST TO LIKE A PERSON 
 
@@ -643,10 +681,13 @@ app.get('/matchedPersons/:userId', async (req, res) => {
   const { userId } = req.params; // Extract the userId from the URL parameters
 
   try {
-    const user = await User.findById(userId); // Find the user by their ID
+    const user = await User.findById(userId).populate({
+      path: 'matchedPersons.user',
+      select: 'firstName username preferences role bio',
+    });
 
     if (user) {
-      const matchedPersons = user.matchedPersons; // Get the array of matched persons
+      const matchedPersons = user.matchedPersons.map((matchedPerson) => matchedPerson.user);
 
       res.status(200).json({
         success: true,
