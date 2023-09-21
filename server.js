@@ -465,7 +465,7 @@ app.patch('/like/:userId', async (req, res) => {
       (likedPerson) => likedPerson.user.toString() === likedProfileId // If the user who initiated the like already like the profile to like 
     )
     if (alreadyLiked !== -1) { // If the user who initiated the like already like the profile to like
-      return res.status(400).json({ error: 'User has been already liked' });
+      return res.status(400).json({ error: 'User has been already liked' }); // this is not working the first 2 times, its not returning the error message but only the success message below. After 3 tries, it returns the correct error message
     }
 
     // irina: First check if user who initiated the like was already liked by 'the profile to like'
@@ -474,16 +474,29 @@ app.patch('/like/:userId', async (req, res) => {
     )
     // irina: User who initiated the like was already liked by the 'profile to like'
     if (userWasLiked !== -1) { // If the user who initiated the like was already liked by the 'profile to like' then we have a match
-      // Match both users
       userWhoLiked.matchedPersons.push({ user: likedProfileId }); // irina: you need to specify the user object
       profileToLike.matchedPersons.push({ user: userId }); // irina: add userId not a user object
 
-      // irina: Remove the user who initiated the like from the profile to like's likedPersons array
-      profileToLike.likedPersons = profileToLike.likedPersons.filter(
+      // irina: Remove the user who initiated the like from the profile to like's likedPersons array. 
+      profileToLike.likedPersons = profileToLike.likedPersons.filter( 
         (likedPerson) => likedPerson.user.toString() !== userId
       );
-    }
-    // irina: User who initiated the like has not been liked by the profile to like
+    await userWhoLiked.save();
+    await profileToLike.save();
+    console.log("Matched - Before Response");
+    return res.status(200).json({ message: 'Matched' });
+  } else {
+    userWhoLiked.likedPersons.push({ user: likedProfileId });
+
+    await userWhoLiked.save();
+    console.log("No Match - Before Response"); 
+    return res.status(200).json({ message: 'User liked successfully. No match yet' });
+  }
+} catch (error) {
+  res.status(500).json({ error: 'Something went wrong' });
+}
+});
+    /* irina: User who initiated the like has not been liked by the profile to like
     else {
       userWhoLiked.likedPersons.push({ user: likedProfileId });
     }
@@ -491,15 +504,16 @@ app.patch('/like/:userId', async (req, res) => {
     await userWhoLiked.save();
     await profileToLike.save();
 
-    // irina: Respond with a success message
+    // irina: Respond with a success message 
     res.status(200).json({ message: 'User liked successfully.' });
+    
   } catch {
     res.status(500).json({ error: 'Something went wrong' });
   }
-});
+});*/
 
-// PATCH REQUEST TO LIKE A PERSON 
-
+// PATCH REQUEST TO LIKE A PERSON OLD CODE - DELETE?
+/* 
 app.patch('/likedPersons/:userId', async (req, res) => {
   try {
     const { likedUserId } = req.body; // likedUserId is the user who is being liked
@@ -567,87 +581,7 @@ console.log("user", userId)
   }
 });
 
-
-
-// 1. UserToUpdate ska kunna gilla en LikedUser
-
-
-// 2. När user to uppdate har gillat en user ska dennaflyttas fråm potential matches till array likedUsers
-
-
-        
-        //Person A likes person B. When it’s time for person B to like person A,
-        //it goes as follows. Here we check if B is in A’s array, which it is.
-        // const likedIndex = likedUser.likedPersons.findIndex(
-        //   (likedPerson) => likedPerson.user.toString() === userId
-        // );
-
-
-        //1. 
-
-
-        // 1.
-        // Kolla först så att likedUser inte finns i arrayen.
-        // Om den finns i arrayen, gör ingenting - return
-        // Om den inte finns i arrayen, lägg till.
-        // Här vill vi lägga till likedUser i arrayen userToUpdate.likedPersons
-
-  
-
-
-        // 2. SENARE!
-        // Kolla om det är mutual interest. Isf lägg till i matched persons istället.
-
-
-
-
-        //This therefor returns 0.
-        // console.log('likedIndex', likedIndex)
-        // //Now it’s time to check the opposite, if A is in B’s array.
-        // const mutualLikedIndex = userToUpdate.likedPersons.findIndex(
-        //   (likedPerson) => likedPerson.user.toString() === likedUserId
-        // );
-        //This returns -1 because it is not yet added to the liked array.
-        // console.log('mutual', mutualLikedIndex)
-        // const shouldMatch = likedIndex !== -1 && mutualLikedIndex !== -1;
-        // console.log('should', shouldMatch)
-        //The adding to the liked array happens here
-        //To not be able to like one person multiple times,
-        //could we use the mutualLikedIndex? And if it’s not
-        //yet mutual we know that it should be as long as likedIndex is found
-        //right?
-        // if (mutualLikedIndex === -1) {
-        //   userToUpdate.likedPersons.push({
-        //     user: likedUserId,
-        //     isMatched: shouldMatch,
-        //   });
-        // }
-        // if (shouldMatch || (likedIndex === 0 && mutualLikedIndex === -1)) {
-        //   userToUpdate.matchedPersons.push({
-        //     user: likedUserId,
-        //     isMatched: true,
-        //   });
-        //   likedUser.matchedPersons.push({
-        //     user: userId,
-        //     isMatched: true,
-        //   });
-        // }
-
-
-        /* await userToUpdate.save();
-        await likedUser.save();
-        res.json(userToUpdate);
-      } catch (error) {
-        console.error(error);
-        res.status(500).json({ error: 'Something went wrong' });
-      }
-    });
-  } else {
-  res.status(400).json({ error: 'User ID not provided' });
-}
-});*/
-
-
+ */
 
 
 //Disliked persons -to be able to NOT CHOOSE A PERSON
@@ -677,6 +611,7 @@ app.patch("/dislikedPersons/:userId", async (req, res) => {
   }
 });
 /*--------------------current user to be able to see their matched persons------------------------*/
+
 app.get('/matchedPersons/:userId', async (req, res) => {
   const { userId } = req.params; // Extract the userId from the URL parameters
 
