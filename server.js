@@ -9,14 +9,14 @@ import dotenv from 'dotenv';
 dotenv.config();
 require('dotenv').config();
 
-const app = express(); // Create the Express application
+const app = express(); 
 
 // Add middlewares to enable cors and json body parsing
 const corsOptions = {
-  origin: '*', // Allow all origins
-  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'], // Allow GET and POST requests
-  preflightContinue: false, // Enable preflight requests
-  optionsSuccessStatus: 204, // Return 204 status for successful preflight requests
+  origin: '*', 
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE'], 
+  preflightContinue: false, 
+  optionsSuccessStatus: 204, 
 };
 
 // Middlewares
@@ -85,7 +85,7 @@ bio: {
 
   likedPersons: [{
     user: {
-      type: mongoose.Schema.Types.ObjectId, // this is the id of the user who is being liked 
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
     isMatched: {
@@ -96,7 +96,7 @@ bio: {
   
   matchedPersons: [{
     user: {
-      type: mongoose.Schema.Types.ObjectId, // this is the id of the user who is being liked
+      type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
     },
     isMatched: {
@@ -179,7 +179,6 @@ app.post("/register", async (req, res) => {
   }
 });
 
-
 //LOGIN
 app.post("/login", async (req, res) => {
   const { username, password } = req.body;
@@ -235,7 +234,6 @@ app.get("/user/:userId", async (req, res) => {
     });
   }
 });
-
 
 // Endpoint that enables user to update its own profile (not in use yet, but will be in nearest future)
 
@@ -300,7 +298,7 @@ app.delete("/user/:userId", async (req, res) => {
   }
 });
 
-// endpoint used by the developers and used for administrating reasons only
+// endpoint used for developing and administrating purposes 
 app.get("/users", async (req, res) => {
   try {
     const users = await User.find();
@@ -323,7 +321,6 @@ app.get("/users", async (req, res) => {
   }
 });
 
-
 // Endpoint filters the mentees and mentors. Mentors see a list of mentees and vice versa.
 
 app.get('/potentialMatches/:userId', async (req, res) => {
@@ -339,11 +336,8 @@ app.get('/potentialMatches/:userId', async (req, res) => {
     const users = await User.find();
 
     const filteredUsers = users.filter((user) => {
-      // Don't show users who have already been liked by the logged-in user
       const likedIndex = loggedUser.likedPersons.findIndex((u) => u.user.toString() === user._id.toString());
-      // Don't show users who have already been matched with the logged-in user
       const matchedIndex = loggedUser.matchedPersons.findIndex((u) => u.user.toString() === user._id.toString());
-      // Filter out the logged-in user and users who has the same role as the current logged-in user
       return (user._id.toString() !== userId && user.role !== loggedUser.role && likedIndex === -1 && matchedIndex === -1);
 
     })
@@ -409,37 +403,35 @@ app.get('/likedPersons/:userId', async (req, res) => {
   }
 });
 
+// Endpoint handleling matching logic
 
 app.patch('/like/:userId', async (req, res) => {
   try {
-    const { userId } = req.params; // Extract the userId from the URL parameters
-    const likedProfileId = req.body.likedUserId; // Extract the likedUserId from the request body
+    const { userId } = req.params; 
+    
+    const likedProfileId = req.body.likedUserId; 
 
-    const userWhoLiked = await User.findById(userId); // Find the user who initiated the like
-    const profileToLike = await User.findById(likedProfileId); // Find the profile to like
+    const userWhoLiked = await User.findById(userId); 
+    
+    const profileToLike = await User.findById(likedProfileId); 
 
-    if (!userWhoLiked || !profileToLike) { // If either user is not found 
-      return res.status(404).json({ error: 'User not found' }); // Respond with an error message
+    if (!userWhoLiked || !profileToLike) { 
+      return res.status(404).json({ error: 'User not found' }); 
     }
 
-    // If the user who initiated the like already like the profile to like
-    const alreadyLiked = userWhoLiked.likedPersons.findIndex( // Find the index of the profile to like in the user who initiated the like's likedPersons array and defines it as alreadyLiked 
-      (likedPerson) => likedPerson.user.toString() === likedProfileId // If the user who initiated the like already like the profile to like 
+    const alreadyLiked = userWhoLiked.likedPersons.findIndex( 
+      (likedPerson) => likedPerson.user.toString() === likedProfileId 
     )
-    if (alreadyLiked !== -1) { // If the user who initiated the like already like the profile to like
-      return res.status(400).json({ error: 'User has been already liked' }); // this is not working the first 2 times, its not returning the error message but only the success message below. After 3 tries, it returns the correct error message
+    if (alreadyLiked !== -1) { 
+      return res.status(400).json({ error: 'User has been already liked' }); 
     }
 
-    // irina: First check if user who initiated the like was already liked by 'the profile to like'
-    const userWasLiked = profileToLike.likedPersons.findIndex( // Find the index of the user who initiated the like in the profile to like's likedPersons array and defines it as userWasLiked
-      (likedPerson) => likedPerson.user?.toString() === userId // If the user who initiated the like was already liked by the 'profile to like'
+    const userWasLiked = profileToLike.likedPersons.findIndex( 
+      (likedPerson) => likedPerson.user?.toString() === userId 
     )
-    // irina: User who initiated the like was already liked by the 'profile to like'
-    if (userWasLiked !== -1) { // If the user who initiated the like was already liked by the 'profile to like' then we have a match
-      userWhoLiked.matchedPersons.push({ user: likedProfileId }); // irina: you need to specify the user object
-      profileToLike.matchedPersons.push({ user: userId }); // irina: add userId not a user object
-
-      // irina: Remove the user who initiated the like from the profile to like's likedPersons array. 
+    if (userWasLiked !== -1) {
+      userWhoLiked.matchedPersons.push({ user: likedProfileId });
+      profileToLike.matchedPersons.push({ user: userId });
       profileToLike.likedPersons = profileToLike.likedPersons.filter( 
         (likedPerson) => likedPerson.user.toString() !== userId
       );
@@ -458,90 +450,12 @@ app.patch('/like/:userId', async (req, res) => {
   res.status(500).json({ error: 'Something went wrong' });
 }
 });
-    /* irina: User who initiated the like has not been liked by the profile to like
-    else {
-      userWhoLiked.likedPersons.push({ user: likedProfileId });
-    }
 
-    await userWhoLiked.save();
-    await profileToLike.save();
-
-    // irina: Respond with a success message 
-    res.status(200).json({ message: 'User liked successfully.' });
-    
-  } catch {
-    res.status(500).json({ error: 'Something went wrong' });
-  }
-});*/
-
-// PATCH REQUEST TO LIKE A PERSON OLD CODE - DELETE?
-/* 
-app.patch('/likedPersons/:userId', async (req, res) => {
-  try {
-    const { likedUserId } = req.body; 
-    const { userId } = req.params;
-
-    console.log('[PATCH /likedPersons/:userId] Received request to like user', likedUserId, 'by user', userId);
-
-    const userToUpdate = await User.findById(userId);
-    const likedUser = await User.findById(likedUserId);
-
-    if (!userToUpdate || !likedUser) {
-      console.error('[PATCH /likedPersons/:userId] One or both users not found.');
-      return res.status(404).json({ error: 'User not found.' });
-    }
-
-    console.log('[PATCH /likedPersons/:userId] userToUpdate likedPersons:', userToUpdate.likedPersons);
-    console.log('[PATCH /likedPersons/:userId] likedUser likedPersons:', likedUser.likedPersons);
-
-    // Check if the likedUser has already liked the userToUpdate
-    const foundMatch = likedUser.likedPersons.some(person => String(person.user) === String(userId));
-
-    console.log('[PATCH /likedPersons/:userId] Match found between users:', foundMatch);
-
-    if (foundMatch) {
-      // If a match is found, add each other to their matchedPersons array
-      userToUpdate.matchedPersons.push(likedUserId);
-      likedUser.matchedPersons.push(userId);
-
-      console.log('[PATCH /likedPersons/:userId] userToUpdate matchedPersons after update:', userToUpdate.matchedPersons);
-      console.log('[PATCH /likedPersons/:userId] likedUser matchedPersons after update:', likedUser.matchedPersons);
-
-      // Remove userToUpdate from likedUser's likedPersons array
-      likedUser.likedPersons = likedUser.likedPersons.filter(person => String(person.user) !== String(userId));
-
-      console.log('[PATCH /likedPersons/:userId] likedUser likedPersons after removing matched user:', likedUser.likedPersons);
-
-      await userToUpdate.save();
-      await likedUser.save();
-
-      return res.status(200).json({ message: 'Match found and saved!' });
-
-    } else {
-      // If there's no match, just save the like
-      userToUpdate.likedPersons.push({ user: likedUserId, isMatched: false });
-
-      console.log('[PATCH /likedPersons/:userId] userToUpdate likedPersons after liking:', userToUpdate.likedPersons);
-
-      await userToUpdate.save();
-
-      return res.status(200).json({ message: 'User liked successfully, but no match yet.' });
-    }
-    
-  } catch (error) {
-    console.error('[PATCH /likedPersons/:userId] Error:', error.message);
-    res.status(500).json({ error: 'Something went wrong' });
-  }
-});
-
- */
-
-
-//Disliked persons -to be able to NOT CHOOSE A PERSON
+//Disliked persons -to be able to NOT CHOOSE A PERSON (not in use yet, but will be in nearest future)
 app.patch("/dislikedPersons/:userId", async (req, res) => { 
   const {dislikedUserId} = req.body 
-
   console.log('dislikedUserId', dislikedUserId) 
+
   const loggedInUserId = req.userId; 
   const { userId } = req.params; // Extract the userId from the URL parameters
   console.log('loggedInUserId', loggedInUserId) 
@@ -563,7 +477,7 @@ app.patch("/dislikedPersons/:userId", async (req, res) => {
 /*--------------------current user to be able to see their matched persons------------------------*/
 
 app.get('/matchedPersons/:userId', async (req, res) => {
-  const { userId } = req.params; // Extract the userId from the URL parameters
+  const { userId } = req.params;
 
   try {
     const user = await User.findById(userId).populate({
@@ -588,7 +502,6 @@ app.get('/matchedPersons/:userId', async (req, res) => {
 });
 
 // start the server
-
 http.listen(process.env.PORT || 8080, () => {
   console.log(`Server is running on port ${process.env.PORT || 8080}`);
 });
