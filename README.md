@@ -23,12 +23,3 @@ Join us today and take a step towards achieving your tech career aspirations!
 
 This is the backend code for a Mentorship App built using Express.js, MongoDB, and Socket.io. The backend provides APIs for user registration, login, user profile management, liking/disliking users, and more.
 
-## Installation
-
-1. Clone the repository.
-2. Install the required dependencies using `npm install`.
-3. Create a `.env` file in the root directory and set the necessary environment variables:
-
-```plaintext
-MONGO_URL=<your-mongodb-connection-string>
-PORT=<desired-port>
