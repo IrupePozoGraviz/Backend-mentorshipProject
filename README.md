@@ -1,11 +1,34 @@
-# mentor
+# TeQueenMatch Backend
 
-This project includes the packages and babel setup for an express server, and is just meant to make things a little simpler to get up and running with.
+Welcome to the TeQueenMatch backend repository! This backend project powers the innovative platform that connects women and non-binary individuals in tech with industry mentors for valuable mentorship and networking opportunities.
 
-## Getting started
+## Project Overview
 
-Install dependencies with `npm install`, then start the server by running `npm run dev`
+Are you a woman in tech seeking mentorship and networking? TeQueenMatch is here to assist you. Our backend offers:
 
-## View it live
+- **User Profiles:** Easily create a comprehensive profile showcasing your skills, industry focus, and career goals.
+- **Smart Matching Algorithm:** Our matching algorithm connects you with mentors based on key criteria such as location and industry.
+- **Effortless Communication:** Seamlessly connect and interact with your mentor using email-based communication and real-time messaging.
 
-Every project should be deployed somewhere. Be sure to include the link to the deployed project so that the viewer can click around and see what it's all about.
+Join us today and take a step towards achieving your tech career aspirations!
+
+## Technologies Used
+
+- **Node.js:** Powering the backend logic and functionality.
+- **Express.js:** Providing a robust framework for building APIs and handling requests.
+- **MongoDB:** Storing user data including profiles, preferences, and matches.
+- **User Schema:** Incorporating key information such as password, email, name, preferences, and more.
+
+## Mentorship App Backend
+
+This is the backend code for a Mentorship App built using Express.js, MongoDB, and Socket.io. The backend provides APIs for user registration, login, user profile management, liking/disliking users, and more.
+
+## Installation
+
+1. Clone the repository.
+2. Install the required dependencies using `npm install`.
+3. Create a `.env` file in the root directory and set the necessary environment variables:
+
+```plaintext
+MONGO_URL=<your-mongodb-connection-string>
+PORT=<desired-port>
