@@ -5,11 +5,15 @@ import crypto from "crypto";
 import bcrypt from "bcrypt";
 import validator from 'validator';
 import listEndpoints from "express-list-endpoints";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
+import multer from 'multer';
+import {v2 as cloudinary} from 'cloudinary';
+
 dotenv.config();
 require('dotenv').config();
 
 const app = express(); 
+
 
 // Add middlewares to enable cors and json body parsing
 const corsOptions = {
@@ -38,6 +42,19 @@ app.get("/", (req, res) => {
   res.send(listEndpoints(app));
 
 });
+
+// handles pictures
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+
+// handles pictures
+const storage = multer.memoryStorage(); // this will store the file as a buffer in memory
+const upload = multer({ storage: storage });
+
+
 
 const UserSchema = new mongoose.Schema({
   username: {
@@ -500,6 +517,105 @@ app.get('/matchedPersons/:userId', async (req, res) => {
     res.status(500).json({ error: 'Something went wrong' });
   }
 });
+
+
+// Endpoint for uploading a profile picture
+app.post('/user/:userId/upload-profile-picture', upload.single('profilePicture'), async (req, res) => {
+  const userId = req.params.userId;
+  const profilePicture = req.file;
+
+  if (!profilePicture) {
+    return res.status(400).json({ error: 'No file provided' });
+  }
+
+  // TODO: Add authorization logic here to ensure the user is allowed to upload for this userId
+
+  try {
+    const uploadResult = await new Promise((resolve, reject) => {
+      cloudinary.uploader.upload_stream(
+        { 
+          folder: 'profile-pictures',
+          public_id: `user-${userId}`,
+          overwrite: true
+        },
+        (error, result) => {
+          if (error) reject(error);
+          else resolve(result);
+        }
+      ).end(profilePicture.buffer);
+    });
+
+    const updatedUser = await User.findOneAndUpdate(
+      { _id: userId },
+      { profilePicture: uploadResult.secure_url },
+      { new: true }  // This option returns the updated document
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile picture uploaded successfully',
+      file: {
+        fieldname: profilePicture.fieldname,
+        originalname: profilePicture.originalname,
+        mimetype: profilePicture.mimetype,
+        size: profilePicture.size
+      }
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to upload profile picture'
+    });
+  }
+});
+
+
+// Endpoint for deleting a profile picture
+app.delete('/user/:userId/delete-profile-picture', async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+      // Fetch the current user's profilePicture URL
+      const user = await User.findById(userId);
+      if (user && user.profilePicture) {
+          // Extract the public_id from the secure URL
+          const filename = user.profilePicture.split('/').pop().split('.')[0];
+
+          // Delete from Cloudinary
+          await cloudinary.uploader.destroy(filename);
+          
+          // Remove the reference from the database
+          await User.findOneAndUpdate(
+              { _id: userId },
+              { profilePicture: '' }
+          );
+
+          res.status(200).json({
+              success: true,
+              message: 'Profile picture deleted successfully'
+          });
+      } else {
+          res.status(404).json({
+              success: false,
+              message: 'User not found or no profile picture set'
+          });
+      }
+  } catch (error) {
+      res.status(500).json({
+          success: false,
+          message: 'Failed to delete profile picture',
+          error: error.message
+      });
+  }
+});
+
+
+
 
 // start the server
 http.listen(process.env.PORT || 8080, () => {
