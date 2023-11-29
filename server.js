@@ -518,20 +518,25 @@ app.get('/matchedPersons/:userId', async (req, res) => {
   }
 });
 
+/*----------Profile picture upload and delete endpoints-----------------*/
 
 // Endpoint for uploading a profile picture
 app.post('/user/:userId/upload-profile-picture', upload.single('profilePicture'), async (req, res) => {
   const userId = req.params.userId;
   const profilePicture = req.file;
 
+  console.log('userId:', userId); // Log the userId
+  console.log('profilePicture:', profilePicture); // Log details of the file received
+
   if (!profilePicture) {
+    console.log('No file provided');
     return res.status(400).json({ error: 'No file provided' });
   }
 
-  // TODO: Add authorization logic here to ensure the user is allowed to upload for this userId
-
   try {
     const uploadResult = await new Promise((resolve, reject) => {
+      console.log('Starting upload to Cloudinary'); // Log before starting the upload
+
       cloudinary.uploader.upload_stream(
         { 
           folder: 'profile-pictures',
@@ -539,19 +544,29 @@ app.post('/user/:userId/upload-profile-picture', upload.single('profilePicture')
           overwrite: true
         },
         (error, result) => {
-          if (error) reject(error);
-          else resolve(result);
+          if (error) {
+            console.log('Error in Cloudinary upload:', error); // Log error during upload
+            reject(error);
+          } else {
+            console.log('Upload successful, result:', result); // Log success with result
+            resolve(result);
+          }
         }
       ).end(profilePicture.buffer);
     });
 
+    console.log('Upload Result:', uploadResult); // Log the result of the upload
+
     const updatedUser = await User.findOneAndUpdate(
       { _id: userId },
       { profilePicture: uploadResult.secure_url },
-      { new: true }  // This option returns the updated document
+      { new: true }
     );
 
+    console.log('Updated User:', updatedUser); // Log the updated user
+
     if (!updatedUser) {
+      console.log('User not found for userId:', userId);
       return res.status(404).json({ error: 'User not found' });
     }
 
@@ -566,13 +581,14 @@ app.post('/user/:userId/upload-profile-picture', upload.single('profilePicture')
       }
     });
   } catch (error) {
-    console.error(error);
+    console.error('Error in profile picture upload:', error); // Log the caught error
     res.status(500).json({
       success: false,
       message: 'Failed to upload profile picture'
     });
   }
 });
+
 
 
 // Endpoint for deleting a profile picture
@@ -614,7 +630,6 @@ app.delete('/user/:userId/delete-profile-picture', async (req, res) => {
   }
 });
 
-// Endpoint for getting a profile picture
 // Endpoint for getting a user's profile picture
 app.get('/user/:userId/profile-picture', async (req, res) => {
   const userId = req.params.userId;
