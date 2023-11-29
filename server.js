@@ -614,6 +614,38 @@ app.delete('/user/:userId/delete-profile-picture', async (req, res) => {
   }
 });
 
+// Endpoint for getting a profile picture
+// Endpoint for getting a user's profile picture
+app.get('/user/:userId/profile-picture', async (req, res) => {
+  const userId = req.params.userId;
+
+  try {
+    const user = await User.findById(userId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Check if the user has a profile picture set
+    if (user.profilePicture) {
+      // Option 1: Redirect to the image URL
+      res.redirect(user.profilePicture);
+
+      // Option 2: Serve the image file directly (if stored locally or accessible)
+      // res.sendFile('path/to/image/file');
+
+    } else {
+      res.status(404).json({ error: 'No profile picture set for this user' });
+    }
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to retrieve profile picture'
+    });
+  }
+});
+
 
 
 
